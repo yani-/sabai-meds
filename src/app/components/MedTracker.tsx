@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format, isToday, isYesterday, startOfDay } from "date-fns";
+import { supabase } from "@/lib/supabase";
 
 type MedType = "morning" | "evening";
 
@@ -9,22 +10,6 @@ interface MedEntry {
   id: string;
   type: MedType;
   timestamp: string;
-}
-
-const STORAGE_KEY = "sabai-meds";
-
-function loadEntries(): MedEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveEntries(entries: MedEntry[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
 function groupByDate(entries: MedEntry[]): Map<string, MedEntry[]> {
@@ -160,50 +145,123 @@ function CatIcon() {
   );
 }
 
+function Spinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className}`}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.25"
+      />
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function MedTracker() {
   const [entries, setEntries] = useState<MedEntry[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    setEntries(loadEntries());
-    setMounted(true);
+  const fetchEntries = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("med_entries")
+      .select("id, type, timestamp")
+      .order("timestamp", { ascending: false });
+
+    if (!error && data) {
+      setEntries(data as MedEntry[]);
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchEntries();
+
+    const channel = supabase
+      .channel("med_entries_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "med_entries" },
+        () => {
+          fetchEntries();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchEntries]);
 
   const todayEntries = entries.filter((e) => isToday(new Date(e.timestamp)));
   const hasMorning = todayEntries.some((e) => e.type === "morning");
   const hasEvening = todayEntries.some((e) => e.type === "evening");
 
   const recordMed = useCallback(
-    (type: MedType) => {
-      const entry: MedEntry = {
+    async (type: MedType) => {
+      if (saving) return;
+      setSaving(true);
+
+      const now = new Date().toISOString();
+      const optimisticEntry: MedEntry = {
         id: crypto.randomUUID(),
         type,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
       };
-      const updated = [entry, ...entries];
-      setEntries(updated);
-      saveEntries(updated);
+      setEntries((prev) => [optimisticEntry, ...prev]);
+
+      const { error } = await supabase
+        .from("med_entries")
+        .insert({ type, timestamp: now });
+
+      if (error) {
+        setEntries((prev) => prev.filter((e) => e.id !== optimisticEntry.id));
+      } else {
+        await fetchEntries();
+      }
+      setSaving(false);
     },
-    [entries]
+    [saving, fetchEntries]
   );
 
   const deleteEntry = useCallback(
-    (id: string) => {
-      const updated = entries.filter((e) => e.id !== id);
-      setEntries(updated);
-      saveEntries(updated);
+    async (id: string) => {
       setConfirmDelete(null);
+      const prev = entries;
+      setEntries((curr) => curr.filter((e) => e.id !== id));
+
+      const { error } = await supabase
+        .from("med_entries")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        setEntries(prev);
+      }
     },
     [entries]
   );
 
   const grouped = groupByDate(entries);
 
-  if (!mounted) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted text-lg">Loading...</div>
+        <Spinner className="w-8 h-8 text-accent" />
       </div>
     );
   }
@@ -269,14 +327,16 @@ export function MedTracker() {
         <div className="grid grid-cols-2 gap-3 mb-8">
           <button
             onClick={() => recordMed("morning")}
-            className="flex items-center justify-center gap-2 bg-morning text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 bg-morning text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
           >
             <SunIcon className="w-5 h-5" />
             <span>Morning</span>
           </button>
           <button
             onClick={() => recordMed("evening")}
-            className="flex items-center justify-center gap-2 bg-evening text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 bg-evening text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
           >
             <MoonIcon className="w-5 h-5" />
             <span>Evening</span>
