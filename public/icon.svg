@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#f59e0b"/>
+  <g transform="translate(256,256)" fill="white">
+    <!-- Main pad -->
+    <ellipse cx="0" cy="30" rx="65" ry="55"/>
+    <!-- Top pads -->
+    <circle cx="-55" cy="-50" r="32"/>
+    <circle cx="-15" cy="-75" r="32"/>
+    <circle cx="25" cy="-75" r="32"/>
+    <circle cx="60" cy="-45" r="32"/>
+  </g>
+</svg>
