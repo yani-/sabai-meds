@@ -82,6 +82,23 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  );
+}
+
 function TrashIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -175,6 +192,8 @@ export function MedTracker() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [editDateTime, setEditDateTime] = useState("");
 
   const fetchEntries = useCallback(async () => {
     const { data, error } = await supabase
@@ -254,6 +273,39 @@ export function MedTracker() {
       }
     },
     [entries]
+  );
+
+  const startEditing = useCallback((entry: MedEntry) => {
+    const dt = new Date(entry.timestamp);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setEditDateTime(local);
+    setEditingEntry(entry.id);
+    setConfirmDelete(null);
+  }, []);
+
+  const saveEdit = useCallback(
+    async (id: string) => {
+      const newTimestamp = new Date(editDateTime).toISOString();
+      const prev = entries;
+      setEntries((curr) =>
+        curr.map((e) => (e.id === id ? { ...e, timestamp: newTimestamp } : e))
+      );
+      setEditingEntry(null);
+
+      const { error } = await supabase
+        .from("med_entries")
+        .update({ timestamp: newTimestamp })
+        .eq("id", id);
+
+      if (error) {
+        setEntries(prev);
+      } else {
+        await fetchEntries();
+      }
+    },
+    [editDateTime, entries, fetchEntries]
   );
 
   const grouped = groupByDate(entries);
@@ -364,54 +416,84 @@ export function MedTracker() {
                   </h3>
                   <div className="bg-card rounded-2xl border border-border shadow-sm divide-y divide-border overflow-hidden">
                     {dayEntries.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-center gap-3 px-4 py-3"
-                      >
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            entry.type === "morning"
-                              ? "bg-morning-light"
-                              : "bg-evening-light"
-                          }`}
-                        >
-                          {entry.type === "morning" ? (
-                            <SunIcon className="w-4 h-4 text-morning" />
+                      <div key={entry.id} className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              entry.type === "morning"
+                                ? "bg-morning-light"
+                                : "bg-evening-light"
+                            }`}
+                          >
+                            {entry.type === "morning" ? (
+                              <SunIcon className="w-4 h-4 text-morning" />
+                            ) : (
+                              <MoonIcon className="w-4 h-4 text-evening" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium capitalize">
+                              {entry.type} pills
+                            </div>
+                            <div className="text-xs text-muted">
+                              {format(new Date(entry.timestamp), "h:mm a")}
+                            </div>
+                          </div>
+                          {confirmDelete === entry.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => deleteEntry(entry.id)}
+                                className="text-xs text-red-500 font-medium px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => setConfirmDelete(null)}
+                                className="text-xs text-muted px-2 py-1 rounded-lg hover:bg-background transition-colors cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           ) : (
-                            <MoonIcon className="w-4 h-4 text-evening" />
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => startEditing(entry)}
+                                className="p-2 text-muted hover:text-accent transition-colors rounded-lg hover:bg-background cursor-pointer"
+                                aria-label="Edit entry"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setConfirmDelete(entry.id)}
+                                className="p-2 text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-background cursor-pointer"
+                                aria-label="Delete entry"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium capitalize">
-                            {entry.type} pills
-                          </div>
-                          <div className="text-xs text-muted">
-                            {format(new Date(entry.timestamp), "h:mm a")}
-                          </div>
-                        </div>
-                        {confirmDelete === entry.id ? (
-                          <div className="flex items-center gap-1">
+                        {editingEntry === entry.id && (
+                          <div className="mt-2 ml-11 flex items-center gap-2">
+                            <input
+                              type="datetime-local"
+                              value={editDateTime}
+                              onChange={(e) => setEditDateTime(e.target.value)}
+                              className="text-sm bg-background border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                            />
                             <button
-                              onClick={() => deleteEntry(entry.id)}
-                              className="text-xs text-red-500 font-medium px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors cursor-pointer"
+                              onClick={() => saveEdit(entry.id)}
+                              className="text-xs font-medium text-accent px-2 py-1.5 rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
                             >
-                              Delete
+                              Save
                             </button>
                             <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="text-xs text-muted px-2 py-1 rounded-lg hover:bg-background transition-colors cursor-pointer"
+                              onClick={() => setEditingEntry(null)}
+                              className="text-xs text-muted px-2 py-1.5 rounded-lg hover:bg-background transition-colors cursor-pointer"
                             >
                               Cancel
                             </button>
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(entry.id)}
-                            className="p-2 text-muted hover:text-red-500 transition-colors rounded-lg hover:bg-background cursor-pointer"
-                            aria-label="Delete entry"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
                         )}
                       </div>
                     ))}
