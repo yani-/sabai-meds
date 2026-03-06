@@ -10,6 +10,8 @@
   --morning-light: #dbeafe;
   --evening: #8b5cf6;
   --evening-light: #ede9fe;
+  --iv: #14b8a6;
+  --iv-light: #ccfbf1;
   --success: #22c55e;
   --muted: #78716c;
   --border: #e7e5e4;
@@ -25,6 +27,8 @@
   --color-morning-light: var(--morning-light);
   --color-evening: var(--evening);
   --color-evening-light: var(--evening-light);
+  --color-iv: var(--iv);
+  --color-iv-light: var(--iv-light);
   --color-success: var(--success);
   --color-muted: var(--muted);
   --color-border: var(--border);
@@ -43,6 +47,8 @@
     --morning-light: #1e3a5f;
     --evening: #a78bfa;
     --evening-light: #3b1f6e;
+    --iv: #2dd4bf;
+    --iv-light: #134e4a;
     --success: #4ade80;
     --muted: #a8a29e;
     --border: #44403c;

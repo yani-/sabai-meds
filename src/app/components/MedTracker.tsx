@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { format, isToday, isYesterday, startOfDay } from "date-fns";
 import { supabase } from "@/lib/supabase";
 
-type MedType = "morning" | "evening";
+type MedType = "morning" | "evening" | "iv";
 
 interface MedEntry {
   id: string;
@@ -62,6 +62,22 @@ function MoonIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
     >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
+function DropletIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
     </svg>
   );
 }
@@ -229,6 +245,7 @@ export function MedTracker() {
   const todayEntries = entries.filter((e) => isToday(new Date(e.timestamp)));
   const hasMorning = todayEntries.some((e) => e.type === "morning");
   const hasEvening = todayEntries.some((e) => e.type === "evening");
+  const hasIv = todayEntries.some((e) => e.type === "iv");
 
   const recordMed = useCallback(
     async (type: MedType) => {
@@ -337,7 +354,7 @@ export function MedTracker() {
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-4">
             Today&apos;s Status
           </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div
               className={`rounded-xl p-4 text-center transition-all ${
                 hasMorning
@@ -372,11 +389,28 @@ export function MedTracker() {
                 <div className="text-xs text-muted mt-1">Pending</div>
               )}
             </div>
+            <div
+              className={`rounded-xl p-4 text-center transition-all ${
+                hasIv
+                  ? "bg-iv-light border-2 border-iv/30"
+                  : "bg-background border-2 border-border"
+              }`}
+            >
+              <DropletIcon className="w-6 h-6 mx-auto mb-2 text-iv" />
+              <div className="text-sm font-medium">IV Fluids</div>
+              {hasIv ? (
+                <div className="animate-check-pop mt-1">
+                  <CheckIcon className="w-5 h-5 mx-auto text-success" />
+                </div>
+              ) : (
+                <div className="text-xs text-muted mt-1">Pending</div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-8">
           <button
             onClick={() => recordMed("morning")}
             disabled={saving}
@@ -392,6 +426,14 @@ export function MedTracker() {
           >
             <MoonIcon className="w-5 h-5" />
             <span>Evening</span>
+          </button>
+          <button
+            onClick={() => recordMed("iv")}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 bg-iv text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+          >
+            <DropletIcon className="w-5 h-5" />
+            <span>IV Fluids</span>
           </button>
         </div>
 
@@ -422,18 +464,22 @@ export function MedTracker() {
                             className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                               entry.type === "morning"
                                 ? "bg-morning-light"
-                                : "bg-evening-light"
+                                : entry.type === "evening"
+                                  ? "bg-evening-light"
+                                  : "bg-iv-light"
                             }`}
                           >
                             {entry.type === "morning" ? (
                               <SunIcon className="w-4 h-4 text-morning" />
-                            ) : (
+                            ) : entry.type === "evening" ? (
                               <MoonIcon className="w-4 h-4 text-evening" />
+                            ) : (
+                              <DropletIcon className="w-4 h-4 text-iv" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium capitalize">
-                              {entry.type} pills
+                              {entry.type === "iv" ? "IV Fluids" : `${entry.type} pills`}
                             </div>
                             <div className="text-xs text-muted">
                               {format(new Date(entry.timestamp), "h:mm a")}
