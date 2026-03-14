@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { format, isToday, isYesterday, startOfDay } from "date-fns";
 import { supabase } from "@/lib/supabase";
 
-type MedType = "morning" | "evening" | "iv";
+type MedType = "morning" | "evening" | "iv" | "mirtza";
 
 interface MedEntry {
   id: string;
   type: MedType;
   timestamp: string;
+  ear?: string | null;
 }
 
 function groupByDate(entries: MedEntry[]): Map<string, MedEntry[]> {
@@ -78,6 +79,24 @@ function DropletIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
     >
       <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+    </svg>
+  );
+}
+
+function EarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 18.5a3.5 3.5 0 1 0 7 0c0-1.57.92-2.52 2.04-3.46C16.52 13.82 18 12.58 18 10a6 6 0 0 0-12 0" />
+      <path d="M6 10a4 4 0 0 1 4-4" />
+      <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.67 4" />
     </svg>
   );
 }
@@ -210,11 +229,12 @@ export function MedTracker() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editDateTime, setEditDateTime] = useState("");
+  const [editEar, setEditEar] = useState<string>("right");
 
   const fetchEntries = useCallback(async () => {
     const { data, error } = await supabase
       .from("med_entries")
-      .select("id, type, timestamp")
+      .select("id, type, timestamp, ear")
       .order("timestamp", { ascending: false });
 
     if (!error && data) {
@@ -246,6 +266,7 @@ export function MedTracker() {
   const hasMorning = todayEntries.some((e) => e.type === "morning");
   const hasEvening = todayEntries.some((e) => e.type === "evening");
   const hasIv = todayEntries.some((e) => e.type === "iv");
+  const hasMirtza = todayEntries.some((e) => e.type === "mirtza");
 
   const recordMed = useCallback(
     async (type: MedType) => {
@@ -253,16 +274,18 @@ export function MedTracker() {
       setSaving(true);
 
       const now = new Date().toISOString();
+      const ear = type === "mirtza" ? "right" : null;
       const optimisticEntry: MedEntry = {
         id: crypto.randomUUID(),
         type,
         timestamp: now,
+        ear,
       };
       setEntries((prev) => [optimisticEntry, ...prev]);
 
       const { error } = await supabase
         .from("med_entries")
-        .insert({ type, timestamp: now });
+        .insert({ type, timestamp: now, ...(ear && { ear }) });
 
       if (error) {
         setEntries((prev) => prev.filter((e) => e.id !== optimisticEntry.id));
@@ -298,22 +321,31 @@ export function MedTracker() {
       .toISOString()
       .slice(0, 16);
     setEditDateTime(local);
+    setEditEar(entry.ear || "right");
     setEditingEntry(entry.id);
     setConfirmDelete(null);
   }, []);
 
   const saveEdit = useCallback(
-    async (id: string) => {
+    async (id: string, type: MedType) => {
       const newTimestamp = new Date(editDateTime).toISOString();
       const prev = entries;
+      const updateFields: Record<string, string> = { timestamp: newTimestamp };
+      if (type === "mirtza") {
+        updateFields.ear = editEar;
+      }
       setEntries((curr) =>
-        curr.map((e) => (e.id === id ? { ...e, timestamp: newTimestamp } : e))
+        curr.map((e) =>
+          e.id === id
+            ? { ...e, timestamp: newTimestamp, ...(type === "mirtza" && { ear: editEar }) }
+            : e
+        )
       );
       setEditingEntry(null);
 
       const { error } = await supabase
         .from("med_entries")
-        .update({ timestamp: newTimestamp })
+        .update(updateFields)
         .eq("id", id);
 
       if (error) {
@@ -322,7 +354,7 @@ export function MedTracker() {
         await fetchEntries();
       }
     },
-    [editDateTime, entries, fetchEntries]
+    [editDateTime, editEar, entries, fetchEntries]
   );
 
   const grouped = groupByDate(entries);
@@ -354,7 +386,7 @@ export function MedTracker() {
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-4">
             Today&apos;s Status
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div
               className={`rounded-xl p-4 text-center transition-all ${
                 hasMorning
@@ -406,11 +438,28 @@ export function MedTracker() {
                 <div className="text-xs text-muted mt-1">Pending</div>
               )}
             </div>
+            <div
+              className={`rounded-xl p-4 text-center transition-all ${
+                hasMirtza
+                  ? "bg-mirtza-light border-2 border-mirtza/30"
+                  : "bg-background border-2 border-border"
+              }`}
+            >
+              <EarIcon className="w-6 h-6 mx-auto mb-2 text-mirtza" />
+              <div className="text-sm font-medium">Mirtza</div>
+              {hasMirtza ? (
+                <div className="animate-check-pop mt-1">
+                  <CheckIcon className="w-5 h-5 mx-auto text-success" />
+                </div>
+              ) : (
+                <div className="text-xs text-muted mt-1">Pending</div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-2 gap-3 mb-8">
           <button
             onClick={() => recordMed("morning")}
             disabled={saving}
@@ -434,6 +483,14 @@ export function MedTracker() {
           >
             <DropletIcon className="w-5 h-5" />
             <span>IV Fluids</span>
+          </button>
+          <button
+            onClick={() => recordMed("mirtza")}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 bg-mirtza text-white font-semibold py-4 px-4 rounded-xl shadow-sm hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+          >
+            <EarIcon className="w-5 h-5" />
+            <span>Mirtza</span>
           </button>
         </div>
 
@@ -466,20 +523,30 @@ export function MedTracker() {
                                 ? "bg-morning-light"
                                 : entry.type === "evening"
                                   ? "bg-evening-light"
-                                  : "bg-iv-light"
+                                  : entry.type === "iv"
+                                    ? "bg-iv-light"
+                                    : "bg-mirtza-light"
                             }`}
                           >
                             {entry.type === "morning" ? (
                               <SunIcon className="w-4 h-4 text-morning" />
                             ) : entry.type === "evening" ? (
                               <MoonIcon className="w-4 h-4 text-evening" />
-                            ) : (
+                            ) : entry.type === "iv" ? (
                               <DropletIcon className="w-4 h-4 text-iv" />
+                            ) : (
+                              <EarIcon className="w-4 h-4 text-mirtza" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium capitalize">
-                              {entry.type === "iv" ? "IV Fluids" : `${entry.type} pills`}
+                            <div className="text-sm font-medium">
+                              {entry.type === "morning"
+                                ? "Morning pills"
+                                : entry.type === "evening"
+                                  ? "Evening pills"
+                                  : entry.type === "iv"
+                                    ? "IV Fluids"
+                                    : `Mirtza (${entry.ear || "right"} ear)`}
                             </div>
                             <div className="text-xs text-muted">
                               {format(new Date(entry.timestamp), "h:mm a")}
@@ -520,15 +587,25 @@ export function MedTracker() {
                           )}
                         </div>
                         {editingEntry === entry.id && (
-                          <div className="mt-2 ml-11 flex items-center gap-2">
+                          <div className="mt-2 ml-11 flex flex-wrap items-center gap-2">
                             <input
                               type="datetime-local"
                               value={editDateTime}
                               onChange={(e) => setEditDateTime(e.target.value)}
                               className="text-sm bg-background border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent/50"
                             />
+                            {entry.type === "mirtza" && (
+                              <select
+                                value={editEar}
+                                onChange={(e) => setEditEar(e.target.value)}
+                                className="text-sm bg-background border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                              >
+                                <option value="right">Right ear</option>
+                                <option value="left">Left ear</option>
+                              </select>
+                            )}
                             <button
-                              onClick={() => saveEdit(entry.id)}
+                              onClick={() => saveEdit(entry.id, entry.type)}
                               className="text-xs font-medium text-accent px-2 py-1.5 rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
                             >
                               Save

@@ -12,6 +12,8 @@
   --evening-light: #ede9fe;
   --iv: #14b8a6;
   --iv-light: #ccfbf1;
+  --mirtza: #ec4899;
+  --mirtza-light: #fce7f3;
   --success: #22c55e;
   --muted: #78716c;
   --border: #e7e5e4;
@@ -29,6 +31,8 @@
   --color-evening-light: var(--evening-light);
   --color-iv: var(--iv);
   --color-iv-light: var(--iv-light);
+  --color-mirtza: var(--mirtza);
+  --color-mirtza-light: var(--mirtza-light);
   --color-success: var(--success);
   --color-muted: var(--muted);
   --color-border: var(--border);
@@ -49,6 +53,8 @@
     --evening-light: #3b1f6e;
     --iv: #2dd4bf;
     --iv-light: #134e4a;
+    --mirtza: #f472b6;
+    --mirtza-light: #831843;
     --success: #4ade80;
     --muted: #a8a29e;
     --border: #44403c;
