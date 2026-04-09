@@ -1,0 +1,3331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sabay Feeding Tracker</title>
+<style>
+/* ============================================================
+   CSS CUSTOM PROPERTIES & RESET
+   ============================================================ */
+:root {
+  --bg-primary: #0f1724;
+  --bg-secondary: #1a2332;
+  --bg-card: #1e2a3a;
+  --bg-input: #253347;
+  --bg-hover: #2a3a4e;
+  --bg-modal: #1a2332;
+  --text-primary: #e8edf4;
+  --text-secondary: #8899aa;
+  --text-muted: #5a6a7a;
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
+  --accent-dim: rgba(245, 158, 11, 0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239, 68, 68, 0.15);
+  --yellow: #eab308;
+  --yellow-dim: rgba(234, 179, 8, 0.15);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.15);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59, 130, 246, 0.15);
+  --purple: #8b5cf6;
+  --purple-dim: rgba(139, 92, 246, 0.15);
+  --teal: #14b8a6;
+  --teal-dim: rgba(20, 184, 166, 0.15);
+  --pink: #ec4899;
+  --border: #2a3a4e;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --tab-height: 64px;
+  --header-height: 56px;
+  --transition: 0.2s ease;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 428px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.3px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition);
+}
+
+.header-btn:active {
+  background: var(--bg-hover);
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px;
+}
+
+.tab-panel {
+  display: none;
+  min-height: 100%;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ============================================================
+   BOTTOM TAB BAR
+   ============================================================ */
+.tab-bar {
+  height: var(--tab-height);
+  display: flex;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.tab-bar button {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: color var(--transition);
+  min-height: 44px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tab-bar button.active {
+  color: var(--accent);
+}
+
+.tab-bar button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ============================================================
+   COMMON ELEMENTS
+   ============================================================ */
+.section-pad {
+  padding: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  transition: background var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:active {
+  background: var(--bg-hover);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-width: 44px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+
+.btn-primary:active {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.btn-secondary:active {
+  background: var(--bg-hover);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.btn-sm {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition);
+  appearance: none;
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--accent);
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238899aa' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+textarea.form-input {
+  height: auto;
+  padding: 10px 14px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition);
+  min-width: 44px;
+  justify-content: center;
+}
+
+.chip.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   MODAL / OVERLAY
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-modal);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  width: 100%;
+  max-width: 428px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  animation: slideUp 0.25s ease;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ============================================================
+   FEED TAB
+   ============================================================ */
+.calorie-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-primary);
+  padding: 16px;
+  padding-bottom: 12px;
+}
+
+.calorie-display {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.calorie-display .cal-number {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.calorie-display .cal-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.calorie-display .cal-remaining {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.progress-bar-container {
+  position: relative;
+  height: 12px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  overflow: visible;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease, background 0.3s ease;
+  min-width: 4px;
+}
+
+.progress-bar-marker {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 20px;
+  background: var(--text-muted);
+  border-radius: 1px;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.feed-list {
+  padding: 0 16px;
+}
+
+.feed-card {
+  position: relative;
+}
+
+.feed-card .feed-time {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.feed-card .feed-product {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.feed-card .feed-details {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.feed-card .feed-details span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.feed-card .feed-cal {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.feed-card .feed-method {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.method-voluntary { background: var(--green-dim); color: var(--green); }
+.method-syringe { background: var(--purple-dim); color: var(--purple); }
+.method-mixed { background: var(--blue-dim); color: var(--blue); }
+
+.feed-card .feed-notes {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.feed-card-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+}
+
+@media (hover: hover) {
+  .feed-card-actions {
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .feed-card:hover .feed-card-actions,
+  .feed-card:focus-within .feed-card-actions {
+    opacity: 1;
+  }
+}
+
+.feed-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.feed-action-btn.delete:active {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+/* ============================================================
+   MEDS TAB
+   ============================================================ */
+.med-section {
+  margin-bottom: 16px;
+}
+
+.med-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding: 0 16px;
+}
+
+.med-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  margin: 0 16px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  min-height: 52px;
+  cursor: pointer;
+}
+
+.med-item:active {
+  background: var(--bg-hover);
+}
+
+.med-checkbox {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.med-checkbox.checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.med-checkbox.checked::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 14px;
+  border: solid #fff;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.med-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.med-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.med-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.med-time-stamp {
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.subq-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  margin: 0 16px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.subq-input-row input {
+  width: 80px;
+  height: 38px;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.subq-input-row input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ============================================================
+   HEALTH TAB
+   ============================================================ */
+.health-subnav {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.health-subnav button {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+  min-width: 44px;
+}
+
+.health-subnav button.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.health-panel {
+  display: none;
+}
+
+.health-panel.active {
+  display: block;
+}
+
+/* Weight */
+.weight-display {
+  text-align: center;
+  padding: 20px;
+}
+
+.weight-display .weight-current {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+}
+
+.weight-display .weight-target {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.weight-progress {
+  margin: 0 16px 16px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.weight-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+/* Chart */
+.chart-container {
+  margin: 0 16px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.chart-container canvas {
+  display: block;
+  width: 100%;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Respiratory rate */
+.rr-counter {
+  text-align: center;
+  padding: 20px;
+}
+
+.rr-counter .rr-bpm {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -2px;
+}
+
+.rr-counter .rr-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.rr-tap-btn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 16px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.rr-tap-btn:active {
+  background: var(--accent);
+  color: #000;
+  transform: scale(0.95);
+}
+
+.rr-tap-btn .tap-icon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.rr-timer {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rr-alert {
+  margin: 12px 16px;
+  padding: 12px 16px;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Labs */
+.lab-entry-card {
+  margin: 0 16px 10px;
+}
+
+.lab-date {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.lab-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lab-chip {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.lab-chip.high {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.lab-chip.low {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+
+.lab-chip.normal {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.lab-chart-select {
+  margin: 12px 16px;
+}
+
+/* Vet appointments */
+.vet-card {
+  margin: 0 16px 10px;
+}
+
+.vet-date {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.vet-location {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.vet-tests {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.vet-countdown {
+  font-size: 12px;
+  color: var(--teal);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   HISTORY TAB
+   ============================================================ */
+.history-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 8px;
+}
+
+.history-nav button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.history-date-label {
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.history-summary {
+  margin: 0 16px 16px;
+  padding: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.history-stat {
+  text-align: center;
+}
+
+.history-stat .stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.history-stat .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weekly-summary {
+  margin: 0 16px 16px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.weekly-summary h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.weekly-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--text-secondary);
+}
+
+.weekly-row span:last-child {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Calendar overlay */
+.calendar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.calendar-overlay.show {
+  display: flex;
+}
+
+.calendar-box {
+  background: var(--bg-modal);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 100%;
+  max-width: 340px;
+  animation: slideUp 0.25s ease;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-header button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-header span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.calendar-grid .day-header {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.calendar-grid .day-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+
+.calendar-grid .day-cell:hover {
+  background: var(--bg-hover);
+}
+
+.calendar-grid .day-cell.today {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.calendar-grid .day-cell.selected {
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+}
+
+.calendar-grid .day-cell.other-month {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.calendar-grid .day-cell.has-data::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.calendar-grid .day-cell {
+  position: relative;
+}
+
+/* ============================================================
+   DATA IMPORT/EXPORT
+   ============================================================ */
+.data-section {
+  padding: 16px;
+}
+
+.data-section .btn {
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   SWIPE DELETE
+   ============================================================ */
+.swipe-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+}
+
+.swipe-bg {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s ease;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+.tab-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* ============================================================
+   CONFIRM DIALOG
+   ============================================================ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.confirm-overlay.show {
+  display: flex;
+}
+
+.confirm-box {
+  background: var(--bg-modal);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+}
+
+.confirm-box p {
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.confirm-box .btn-group {
+  justify-content: center;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header class="header">
+    <h1>Sabay Tracker</h1>
+    <div class="header-actions">
+      <button class="header-btn" id="btn-settings" title="Settings" onclick="openSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="header-btn" id="btn-data" title="Import/Export" onclick="openDataModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- ========== FEED TAB ========== -->
+    <div id="tab-feed" class="tab-panel active">
+      <div class="calorie-header">
+        <div class="calorie-display">
+          <div class="cal-number" id="cal-total">0</div>
+          <div class="cal-label">calories today</div>
+          <div class="cal-remaining" id="cal-remaining">250 cal remaining</div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="cal-progress-fill" style="width: 0%;"></div>
+          <div class="progress-bar-marker" id="cal-marker-min" style="left: 60%;" title="150 cal minimum"></div>
+        </div>
+        <div class="progress-labels">
+          <span>0</span>
+          <span>150 min</span>
+          <span>250 target</span>
+        </div>
+      </div>
+
+      <div style="padding: 0 16px 12px;">
+        <button class="btn btn-primary btn-block" onclick="openFeedingForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Feeding
+        </button>
+      </div>
+
+      <div class="feed-list" id="feed-list"></div>
+    </div>
+
+    <!-- ========== MEDS TAB ========== -->
+    <div id="tab-meds" class="tab-panel">
+      <div style="padding: 16px 16px 8px;">
+        <h2 style="font-size: 20px; font-weight: 800;">Medications</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Daily medication checklist</p>
+      </div>
+      <div id="meds-list"></div>
+    </div>
+
+    <!-- ========== HEALTH TAB ========== -->
+    <div id="tab-health" class="tab-panel">
+      <div class="health-subnav" id="health-subnav">
+        <button class="active" onclick="switchHealthTab('weight')">Weight</button>
+        <button onclick="switchHealthTab('breathing')">Breathing</button>
+        <button onclick="switchHealthTab('labs')">Labs</button>
+        <button onclick="switchHealthTab('vet')">Vet</button>
+      </div>
+
+      <!-- Weight Panel -->
+      <div id="health-weight" class="health-panel active">
+        <div class="weight-display">
+          <div class="weight-current" id="weight-current">--</div>
+          <div class="weight-target">Target: 3.7 kg</div>
+        </div>
+        <div class="weight-progress">
+          <div class="weight-progress-fill" id="weight-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Weight Trend</div>
+          <canvas id="chart-weight" height="180"></canvas>
+        </div>
+        <div style="padding: 0 16px;">
+          <button class="btn btn-primary btn-block" onclick="openWeightForm()">Log Weight</button>
+        </div>
+        <div id="weight-history" style="padding: 16px;"></div>
+      </div>
+
+      <!-- Breathing Panel -->
+      <div id="health-breathing" class="health-panel">
+        <div class="rr-counter">
+          <div class="rr-bpm" id="rr-bpm-display">--</div>
+          <div class="rr-label">breaths per minute</div>
+        </div>
+        <div class="rr-timer" id="rr-timer">0:00</div>
+        <div style="text-align: center;">
+          <button class="rr-tap-btn" id="rr-tap-btn" onclick="handleRRTap()">
+            <span class="tap-icon">&#128420;</span>
+            <span>TAP</span>
+          </button>
+        </div>
+        <div style="text-align: center; padding: 8px;">
+          <button class="btn btn-sm btn-secondary" onclick="resetRR()">Reset</button>
+          <button class="btn btn-sm btn-secondary" style="margin-left: 8px;" onclick="openManualRR()">Manual Entry</button>
+          <button class="btn btn-sm btn-primary" id="rr-save-btn" style="margin-left: 8px; display: none;" onclick="saveRR()">Save</button>
+        </div>
+        <div id="rr-alert" class="rr-alert" style="display: none;">
+          Consider reducing SubQ volume and contact vet
+        </div>
+        <div class="chart-container" style="margin-top: 16px;">
+          <div class="chart-title">Respiratory Rate Trend</div>
+          <canvas id="chart-rr" height="180"></canvas>
+        </div>
+        <div id="rr-history" style="padding: 0 16px;"></div>
+      </div>
+
+      <!-- Labs Panel -->
+      <div id="health-labs" class="health-panel">
+        <div style="padding: 12px 16px 0;">
+          <button class="btn btn-primary btn-block" onclick="openLabForm()">Add Blood Work</button>
+        </div>
+        <div class="lab-chart-select" style="margin-top: 12px;">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <select class="form-select" id="lab-chart-marker" onchange="renderLabChart()">
+              <option value="CRE">Creatinine (CRE)</option>
+              <option value="BUN">BUN</option>
+              <option value="SDMA">SDMA</option>
+              <option value="PHOS">Phosphorus</option>
+              <option value="CA">Calcium</option>
+              <option value="K">Potassium</option>
+              <option value="tCO2">tCO2</option>
+              <option value="fSAA">fSAA</option>
+              <option value="GLU">Glucose</option>
+              <option value="ALT">ALT</option>
+              <option value="AST">AST</option>
+            </select>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title" id="lab-chart-title">Creatinine (CRE) Trend</div>
+          <canvas id="chart-labs" height="200"></canvas>
+        </div>
+        <div id="labs-history" style="padding: 0 16px;"></div>
+      </div>
+
+      <!-- Vet Panel -->
+      <div id="health-vet" class="health-panel">
+        <div style="padding: 12px 16px 0;">
+          <button class="btn btn-primary btn-block" onclick="openVetForm()">Add Appointment</button>
+        </div>
+        <div id="vet-list" style="padding-top: 12px;"></div>
+      </div>
+    </div>
+
+    <!-- ========== HISTORY TAB ========== -->
+    <div id="tab-history" class="tab-panel">
+      <div class="history-nav">
+        <button onclick="historyPrev()">&#8592;</button>
+        <div class="history-date-label" id="history-date-label" onclick="openCalendar()">Today</div>
+        <button onclick="historyNext()">&#8594;</button>
+      </div>
+      <div class="history-summary" id="history-summary"></div>
+      <div id="history-meals" style="padding: 0 16px;"></div>
+      <div class="weekly-summary" id="weekly-summary"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Tab Bar -->
+  <nav class="tab-bar">
+    <button class="active" onclick="switchTab('feed')" id="tab-btn-feed">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      <span>Feed</span>
+    </button>
+    <button onclick="switchTab('meds')" id="tab-btn-meds">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5A2.25 2.25 0 0 0 8.25 22.5h7.5A2.25 2.25 0 0 0 18 20.25V3.75A2.25 2.25 0 0 0 15.75 1.5H13.5m-3 0V3h3V1.5m-3 0h3m-6 9h6m-6 4h6"/></svg>
+      <span>Meds</span>
+    </button>
+    <button onclick="switchTab('health')" id="tab-btn-health">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span>Health</span>
+    </button>
+    <button onclick="switchTab('history')" id="tab-btn-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>History</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ============================================================
+     MODAL: Add/Edit Feeding
+     ============================================================ -->
+<div class="modal-overlay" id="modal-feeding">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="feeding-modal-title">Add Feeding</h2>
+      <button class="modal-close" onclick="closeFeedingForm()">&times;</button>
+    </div>
+    <form id="feeding-form" onsubmit="saveFeedingForm(event)">
+      <input type="hidden" id="feeding-edit-id">
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input type="datetime-local" class="form-input" id="feeding-time">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Product</label>
+        <select class="form-select" id="feeding-product" onchange="onProductSelect()">
+          <option value="">Select product...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount</label>
+        <div class="chip-group" id="feeding-amount-presets" style="margin-bottom: 8px;"></div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="number" class="form-input" id="feeding-grams" placeholder="Custom grams" step="0.1" min="0" style="flex:1;" oninput="updateCalPreview()">
+          <span style="color: var(--text-muted); font-size: 13px; white-space: nowrap;" id="feeding-cal-preview"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Method</label>
+        <div class="chip-group">
+          <button type="button" class="chip active" data-method="voluntary" onclick="selectMethod(this)">Voluntary</button>
+          <button type="button" class="chip" data-method="syringe" onclick="selectMethod(this)">Syringe</button>
+          <button type="button" class="chip" data-method="mixed" onclick="selectMethod(this)">Mixed</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="form-input" id="feeding-notes" rows="2" placeholder="Any observations..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save Feeding</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Product Management
+     ============================================================ -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Products</h2>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div id="product-list"></div>
+    <div class="divider"></div>
+    <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;" id="product-form-title">Add Product</h3>
+    <form id="product-form" onsubmit="saveProduct(event)">
+      <input type="hidden" id="product-edit-id">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="product-name" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label class="form-label">Calories</label>
+          <input type="number" class="form-input" id="product-calories" required step="0.1" min="0" placeholder="per serving">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Serving (g)</label>
+          <input type="number" class="form-input" id="product-serving" required step="0.1" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit</label>
+        <div class="chip-group">
+          <button type="button" class="chip active" data-unit="can" onclick="selectUnit(this)">Can</button>
+          <button type="button" class="chip" data-unit="pouch" onclick="selectUnit(this)">Pouch</button>
+          <button type="button" class="chip" data-unit="ml" onclick="selectUnit(this)">ml</button>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" onclick="resetProductForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Data Import/Export
+     ============================================================ -->
+<div class="modal-overlay" id="modal-data">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Data Management</h2>
+      <button class="modal-close" onclick="closeDataModal()">&times;</button>
+    </div>
+    <div class="data-section">
+      <button class="btn btn-primary btn-block" onclick="exportData()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Export All Data (JSON)
+      </button>
+      <button class="btn btn-secondary btn-block" onclick="triggerImport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Import Data (JSON)
+      </button>
+      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px; text-align: center;">
+        Data is stored locally on this device. Export regularly to back up.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Weight Entry
+     ============================================================ -->
+<div class="modal-overlay" id="modal-weight">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Log Weight</h2>
+      <button class="modal-close" onclick="closeModal('modal-weight')">&times;</button>
+    </div>
+    <form onsubmit="saveWeight(event)">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="weight-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Weight (kg)</label>
+        <input type="number" class="form-input" id="weight-value" step="0.01" min="0" max="20" required placeholder="e.g. 3.3">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save Weight</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Manual RR Entry
+     ============================================================ -->
+<div class="modal-overlay" id="modal-rr">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Manual Respiratory Rate</h2>
+      <button class="modal-close" onclick="closeModal('modal-rr')">&times;</button>
+    </div>
+    <form onsubmit="saveManualRR(event)">
+      <div class="form-group">
+        <label class="form-label">Date & Time</label>
+        <input type="datetime-local" class="form-input" id="rr-datetime">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Breaths per Minute</label>
+        <input type="number" class="form-input" id="rr-manual-bpm" min="1" max="200" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Lab Entry
+     ============================================================ -->
+<div class="modal-overlay" id="modal-lab">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="lab-modal-title">Add Blood Work</h2>
+      <button class="modal-close" onclick="closeModal('modal-lab')">&times;</button>
+    </div>
+    <form onsubmit="saveLab(event)">
+      <input type="hidden" id="lab-edit-id">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="lab-date" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group">
+          <label class="form-label">CRE</label>
+          <input type="number" class="form-input" id="lab-CRE" step="0.1" placeholder="mg/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">BUN</label>
+          <input type="number" class="form-input" id="lab-BUN" step="1" placeholder="mg/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">SDMA</label>
+          <input type="number" class="form-input" id="lab-SDMA" step="1" placeholder="ug/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phosphorus</label>
+          <input type="number" class="form-input" id="lab-PHOS" step="0.1" placeholder="mg/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Calcium</label>
+          <input type="number" class="form-input" id="lab-CA" step="0.1" placeholder="mg/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Potassium</label>
+          <input type="number" class="form-input" id="lab-K" step="0.1" placeholder="mEq/L">
+        </div>
+        <div class="form-group">
+          <label class="form-label">tCO2</label>
+          <input type="number" class="form-input" id="lab-tCO2" step="1" placeholder="mEq/L">
+        </div>
+        <div class="form-group">
+          <label class="form-label">fSAA</label>
+          <input type="number" class="form-input" id="lab-fSAA" step="0.1" placeholder="ug/mL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Glucose</label>
+          <input type="number" class="form-input" id="lab-GLU" step="1" placeholder="mg/dL">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ALT</label>
+          <input type="number" class="form-input" id="lab-ALT" step="1" placeholder="U/L">
+        </div>
+        <div class="form-group">
+          <label class="form-label">AST</label>
+          <input type="number" class="form-input" id="lab-AST" step="1" placeholder="U/L">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save Blood Work</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Vet Appointment
+     ============================================================ -->
+<div class="modal-overlay" id="modal-vet">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Add Appointment</h2>
+      <button class="modal-close" onclick="closeModal('modal-vet')">&times;</button>
+    </div>
+    <form onsubmit="saveVetAppt(event)">
+      <input type="hidden" id="vet-edit-id">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="vet-date" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-input" id="vet-location" required placeholder="Clinic name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tests / Notes</label>
+        <textarea class="form-input" id="vet-tests" rows="2" placeholder="Tests needed..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save Appointment</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     CALENDAR OVERLAY
+     ============================================================ -->
+<div class="calendar-overlay" id="calendar-overlay" onclick="if(event.target===this)closeCalendar()">
+  <div class="calendar-box">
+    <div class="calendar-header">
+      <button onclick="calendarPrevMonth()">&#8592;</button>
+      <span id="calendar-month-label"></span>
+      <button onclick="calendarNextMonth()">&#8594;</button>
+    </div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CONFIRM DIALOG
+     ============================================================ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <p id="confirm-message">Are you sure?</p>
+    <div class="btn-group">
+      <button class="btn btn-secondary btn-sm" onclick="confirmCancel()">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmOk()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const supabase = createClient('https://gaodbprijshuvqjqxhhx.supabase.co', 'sb_publishable_lzW3_cjx_P2p2LgnUE7G2Q_4qofQmyF');
+
+/* ============================================================
+   UTILITY FUNCTIONS
+   ============================================================ */
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function nowLocalISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+function dateToLocal(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function timeStr(ts) {
+  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function daysBetween(d1, d2) {
+  const a = new Date(d1); a.setHours(0,0,0,0);
+  const b = new Date(d2); b.setHours(0,0,0,0);
+  return Math.round((b - a) / 86400000);
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ============================================================
+   DATA MAPPING — JS camelCase <-> DB snake_case
+   ============================================================ */
+function feedingToDb(f) {
+  return {
+    id: f.id,
+    timestamp: f.timestamp,
+    product_id: f.productId,
+    product_name: f.productName,
+    grams: f.grams,
+    calories: f.calories,
+    method: f.method,
+    notes: f.notes,
+  };
+}
+
+function feedingFromDb(row) {
+  return {
+    id: row.id,
+    timestamp: row.timestamp,
+    productId: row.product_id,
+    productName: row.product_name,
+    grams: row.grams,
+    calories: row.calories,
+    method: row.method,
+    notes: row.notes,
+  };
+}
+
+function labToDb(l) {
+  return {
+    id: l.id,
+    date: l.date,
+    cre: l.CRE,
+    bun: l.BUN,
+    sdma: l.SDMA,
+    phos: l.PHOS,
+    ca: l.CA,
+    k: l.K,
+    tco2: l.tCO2,
+    fsaa: l.fSAA,
+    glu: l.GLU,
+    alt_val: l.ALT,
+    ast_val: l.AST,
+  };
+}
+
+function labFromDb(row) {
+  return {
+    id: row.id,
+    date: row.date,
+    CRE: row.cre,
+    BUN: row.bun,
+    SDMA: row.sdma,
+    PHOS: row.phos,
+    CA: row.ca,
+    K: row.k,
+    tCO2: row.tco2,
+    fSAA: row.fsaa,
+    GLU: row.glu,
+    ALT: row.alt_val,
+    AST: row.ast_val,
+  };
+}
+
+/* ============================================================
+   LAB REFERENCE RANGES (feline)
+   ============================================================ */
+const LAB_RANGES = {
+  CRE:  { low: 0.8, high: 2.4, unit: 'mg/dL', name: 'Creatinine' },
+  BUN:  { low: 16, high: 36, unit: 'mg/dL', name: 'BUN' },
+  SDMA: { low: 0, high: 14, unit: 'ug/dL', name: 'SDMA' },
+  PHOS: { low: 3.1, high: 6.8, unit: 'mg/dL', name: 'Phosphorus' },
+  CA:   { low: 8.2, high: 10.8, unit: 'mg/dL', name: 'Calcium' },
+  K:    { low: 3.5, high: 5.8, unit: 'mEq/L', name: 'Potassium' },
+  tCO2: { low: 15, high: 25, unit: 'mEq/L', name: 'tCO2' },
+  fSAA: { low: 0, high: 5, unit: 'ug/mL', name: 'fSAA' },
+  GLU:  { low: 74, high: 159, unit: 'mg/dL', name: 'Glucose' },
+  ALT:  { low: 12, high: 130, unit: 'U/L', name: 'ALT' },
+  AST:  { low: 10, high: 100, unit: 'U/L', name: 'AST' },
+};
+
+/* ============================================================
+   IN-MEMORY STATE (cache)
+   ============================================================ */
+let products = [];
+let feedings = [];
+let medsLog = {};
+let weights = [];
+let rrEntries = [];
+let labs = [];
+let vetAppts = [];
+
+/* Current view state */
+let currentTab = 'feed';
+let currentHealthTab = 'weight';
+let historyDate = new Date();
+let calendarViewDate = new Date();
+let confirmCallback = null;
+
+/* Respiratory rate counter state */
+let rrTapCount = 0;
+let rrTimerStart = null;
+let rrTimerInterval = null;
+let rrCalculatedBPM = null;
+
+/* ============================================================
+   SUPABASE DATA LOADING
+   ============================================================ */
+async function initApp() {
+  const [prodRes, feedRes, medsRes, weightRes, rrRes, labRes, vetRes] = await Promise.all([
+    supabase.from('products').select('*'),
+    supabase.from('feedings').select('*'),
+    supabase.from('daily_meds').select('*'),
+    supabase.from('weights').select('*'),
+    supabase.from('respiratory_rates').select('*'),
+    supabase.from('blood_work').select('*'),
+    supabase.from('vet_appointments').select('*'),
+  ]);
+
+  products = prodRes.data || [];
+  feedings = (feedRes.data || []).map(feedingFromDb);
+  weights = weightRes.data || [];
+  rrEntries = (rrRes.data || []).map(r => ({ id: r.id, timestamp: r.timestamp, bpm: r.bpm }));
+  labs = (labRes.data || []).map(labFromDb);
+  vetAppts = vetRes.data || [];
+
+  /* Reconstruct medsLog from daily_meds rows */
+  medsLog = {};
+  (medsRes.data || []).forEach(row => {
+    medsLog[row.date] = row.data || {};
+  });
+
+  renderFeed();
+}
+
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById(`tab-btn-${tab}`).classList.add('active');
+  document.querySelector('.tab-content').scrollTop = 0;
+
+  if (tab === 'feed') renderFeed();
+  if (tab === 'meds') renderMeds();
+  if (tab === 'health') { renderHealthTab(); }
+  if (tab === 'history') renderHistory();
+}
+
+/* ============================================================
+   HEALTH SUB-TAB SWITCHING
+   ============================================================ */
+function switchHealthTab(sub) {
+  currentHealthTab = sub;
+  document.querySelectorAll('#health-subnav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.health-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`#health-subnav button[onclick="switchHealthTab('${sub}')"]`).classList.add('active');
+  document.getElementById(`health-${sub}`).classList.add('active');
+  renderHealthTab();
+}
+
+function renderHealthTab() {
+  if (currentHealthTab === 'weight') renderWeight();
+  if (currentHealthTab === 'breathing') renderBreathing();
+  if (currentHealthTab === 'labs') renderLabs();
+  if (currentHealthTab === 'vet') renderVet();
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function showConfirm(message, callback) {
+  document.getElementById('confirm-message').textContent = message;
+  confirmCallback = callback;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function confirmOk() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+}
+
+function confirmCancel() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCallback = null;
+}
+
+/* ============================================================
+   FEED TAB — RENDERING
+   ============================================================ */
+function getTodayFeedings() {
+  const today = todayStr();
+  return feedings.filter(f => f.timestamp.slice(0, 10) === today).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function getTodayCalories() {
+  return getTodayFeedings().reduce((sum, f) => sum + (f.calories || 0), 0);
+}
+
+function getCalorieColor(cal) {
+  if (cal < 150) return 'var(--red)';
+  if (cal < 220) return 'var(--yellow)';
+  return 'var(--green)';
+}
+
+function renderFeed() {
+  const todayCal = getTodayCalories();
+  const pct = Math.min(100, (todayCal / 250) * 100);
+  const remaining = Math.max(0, 250 - todayCal);
+
+  document.getElementById('cal-total').textContent = Math.round(todayCal);
+  document.getElementById('cal-total').style.color = getCalorieColor(todayCal);
+  document.getElementById('cal-remaining').textContent = remaining > 0
+    ? `${Math.round(remaining)} cal remaining`
+    : 'Target reached!';
+
+  const fill = document.getElementById('cal-progress-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = getCalorieColor(todayCal);
+
+  const todayFeeds = getTodayFeedings();
+  const list = document.getElementById('feed-list');
+
+  if (todayFeeds.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+        <p>No feedings recorded today.<br>Tap "Add Feeding" to start tracking.</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = todayFeeds.map(f => {
+    const methodClass = f.method ? `method-${f.method}` : '';
+    const methodLabel = f.method ? f.method.charAt(0).toUpperCase() + f.method.slice(1) : '';
+    return `
+      <div class="card feed-card" onclick="editFeeding('${f.id}')">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="feed-time">${timeStr(f.timestamp)}</div>
+            <div class="feed-product">${escHtml(f.productName || 'Unknown')}</div>
+            <div class="feed-details">
+              <span>${f.grams ? f.grams + 'g' : ''}</span>
+              <span class="feed-cal">${Math.round(f.calories || 0)} cal</span>
+            </div>
+            ${methodLabel ? `<span class="feed-method ${methodClass}">${methodLabel}</span>` : ''}
+            ${f.notes ? `<div class="feed-notes">${escHtml(f.notes)}</div>` : ''}
+          </div>
+          <button class="feed-action-btn delete" onclick="event.stopPropagation(); deleteFeeding('${f.id}')" title="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   FEED TAB — ADD / EDIT FEEDING
+   ============================================================ */
+function populateProductSelect() {
+  const sel = document.getElementById('feeding-product');
+  sel.innerHTML = '<option value="">Select product...</option>' +
+    products.map(p => `<option value="${p.id}">${escHtml(p.name)} (${p.calories} cal / ${p.serving}g ${p.unit})</option>`).join('');
+}
+
+function buildAmountPresets(product) {
+  const container = document.getElementById('feeding-amount-presets');
+  if (!product) { container.innerHTML = ''; return; }
+  const presets = [
+    { label: 'Full', fraction: 1 },
+    { label: '3/4', fraction: 0.75 },
+    { label: '1/2', fraction: 0.5 },
+    { label: '1/4', fraction: 0.25 },
+  ];
+  container.innerHTML = presets.map(p => {
+    const g = Math.round(product.serving * p.fraction * 10) / 10;
+    return `<button type="button" class="chip" onclick="setGrams(${g})">${p.label} (${g}g)</button>`;
+  }).join('');
+}
+
+function setGrams(g) {
+  document.getElementById('feeding-grams').value = g;
+  updateCalPreview();
+  /* highlight chip */
+  document.querySelectorAll('#feeding-amount-presets .chip').forEach(c => {
+    c.classList.toggle('active', parseFloat(c.textContent.match(/\(([\d.]+)g\)/)?.[1]) === g);
+  });
+}
+
+function onProductSelect() {
+  const pid = document.getElementById('feeding-product').value;
+  const product = products.find(p => p.id === pid);
+  buildAmountPresets(product);
+  document.getElementById('feeding-grams').value = product ? product.serving : '';
+  updateCalPreview();
+}
+
+function updateCalPreview() {
+  const pid = document.getElementById('feeding-product').value;
+  const product = products.find(p => p.id === pid);
+  const grams = parseFloat(document.getElementById('feeding-grams').value) || 0;
+  if (product && grams > 0) {
+    const cal = (grams / product.serving) * product.calories;
+    document.getElementById('feeding-cal-preview').textContent = `= ${Math.round(cal)} cal`;
+  } else {
+    document.getElementById('feeding-cal-preview').textContent = '';
+  }
+}
+
+function selectMethod(btn) {
+  btn.closest('.chip-group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function openFeedingForm(editId) {
+  const form = document.getElementById('feeding-form');
+  form.reset();
+  document.getElementById('feeding-edit-id').value = '';
+  document.getElementById('feeding-modal-title').textContent = 'Add Feeding';
+  document.getElementById('feeding-time').value = nowLocalISO();
+  document.getElementById('feeding-cal-preview').textContent = '';
+  document.getElementById('feeding-amount-presets').innerHTML = '';
+
+  /* Reset method chips */
+  form.querySelectorAll('[data-method]').forEach((c, i) => {
+    c.classList.toggle('active', i === 0);
+  });
+
+  populateProductSelect();
+
+  if (editId) {
+    const f = feedings.find(x => x.id === editId);
+    if (f) {
+      document.getElementById('feeding-edit-id').value = f.id;
+      document.getElementById('feeding-modal-title').textContent = 'Edit Feeding';
+      document.getElementById('feeding-time').value = f.timestamp.slice(0, 16);
+      document.getElementById('feeding-product').value = f.productId || '';
+      document.getElementById('feeding-grams').value = f.grams || '';
+      document.getElementById('feeding-notes').value = f.notes || '';
+      onProductSelect();
+      if (f.method) {
+        form.querySelectorAll('[data-method]').forEach(c => {
+          c.classList.toggle('active', c.dataset.method === f.method);
+        });
+      }
+      updateCalPreview();
+    }
+  }
+
+  openModal('modal-feeding');
+}
+
+function closeFeedingForm() { closeModal('modal-feeding'); }
+
+async function saveFeedingForm(e) {
+  e.preventDefault();
+  const editId = document.getElementById('feeding-edit-id').value;
+  const timestamp = document.getElementById('feeding-time').value;
+  const productId = document.getElementById('feeding-product').value;
+  const product = products.find(p => p.id === productId);
+  const grams = parseFloat(document.getElementById('feeding-grams').value) || 0;
+  const method = document.querySelector('#feeding-form [data-method].active')?.dataset.method || 'voluntary';
+  const notes = document.getElementById('feeding-notes').value.trim();
+
+  if (!timestamp || !productId || grams <= 0) {
+    alert('Please select a product and enter an amount.');
+    return;
+  }
+
+  const calories = product ? (grams / product.serving) * product.calories : 0;
+
+  const entry = {
+    id: editId || genId(),
+    timestamp,
+    productId,
+    productName: product?.name || 'Unknown',
+    grams,
+    calories: Math.round(calories * 10) / 10,
+    method,
+    notes,
+  };
+
+  if (editId) {
+    const idx = feedings.findIndex(f => f.id === editId);
+    if (idx >= 0) feedings[idx] = entry;
+  } else {
+    feedings.push(entry);
+  }
+
+  closeFeedingForm();
+  renderFeed();
+  await supabase.from('feedings').upsert(feedingToDb(entry));
+}
+
+function editFeeding(id) {
+  openFeedingForm(id);
+}
+
+function deleteFeeding(id) {
+  showConfirm('Delete this feeding entry?', async () => {
+    feedings = feedings.filter(f => f.id !== id);
+    renderFeed();
+    await supabase.from('feedings').delete().eq('id', id);
+  });
+}
+
+/* ============================================================
+   PRODUCT MANAGEMENT
+   ============================================================ */
+function openSettings() {
+  renderProductList();
+  resetProductForm();
+  openModal('modal-settings');
+}
+
+function closeSettings() { closeModal('modal-settings'); }
+
+function renderProductList() {
+  const list = document.getElementById('product-list');
+  list.innerHTML = products.map(p => `
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="flex:1; min-width: 0;">
+        <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escHtml(p.name)}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${p.calories} cal / ${p.serving}g ${p.unit}</div>
+      </div>
+      <div style="display: flex; gap: 4px; flex-shrink: 0;">
+        <button class="feed-action-btn" onclick="editProduct('${p.id}')" title="Edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="feed-action-btn delete" onclick="deleteProduct('${p.id}')" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function selectUnit(btn) {
+  btn.closest('.chip-group').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function resetProductForm() {
+  document.getElementById('product-form').reset();
+  document.getElementById('product-edit-id').value = '';
+  document.getElementById('product-form-title').textContent = 'Add Product';
+  document.querySelectorAll('#product-form [data-unit]').forEach((c, i) => c.classList.toggle('active', i === 0));
+}
+
+function editProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('product-edit-id').value = p.id;
+  document.getElementById('product-form-title').textContent = 'Edit Product';
+  document.getElementById('product-name').value = p.name;
+  document.getElementById('product-calories').value = p.calories;
+  document.getElementById('product-serving').value = p.serving;
+  document.querySelectorAll('#product-form [data-unit]').forEach(c => c.classList.toggle('active', c.dataset.unit === p.unit));
+}
+
+function deleteProduct(id) {
+  showConfirm('Delete this product?', async () => {
+    products = products.filter(p => p.id !== id);
+    renderProductList();
+    await supabase.from('products').delete().eq('id', id);
+  });
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+  const editId = document.getElementById('product-edit-id').value;
+  const name = document.getElementById('product-name').value.trim();
+  const calories = parseFloat(document.getElementById('product-calories').value);
+  const serving = parseFloat(document.getElementById('product-serving').value);
+  const unit = document.querySelector('#product-form [data-unit].active')?.dataset.unit || 'can';
+
+  if (!name || isNaN(calories) || isNaN(serving)) return;
+
+  const entry = { id: editId || genId(), name, calories, serving, unit };
+
+  if (editId) {
+    const idx = products.findIndex(p => p.id === editId);
+    if (idx >= 0) products[idx] = entry;
+  } else {
+    products.push(entry);
+  }
+
+  renderProductList();
+  resetProductForm();
+  await supabase.from('products').upsert(entry);
+}
+
+/* ============================================================
+   MEDS TAB
+   ============================================================ */
+const MED_DEFINITIONS = [
+  { key: 'vetmedin', name: 'Vetmedin', desc: 'Morning', slots: ['morning'] },
+  { key: 'omega3', name: 'Omega-3 Fish Oil', desc: 'Morning + Evening', slots: ['morning', 'evening'] },
+  { key: 'azodyl', name: 'Azodyl', desc: 'Daily', slots: ['daily'] },
+];
+
+/* Renalzin is per-meal, SubQ is special — rendered separately */
+
+function getMedsForToday() {
+  const today = todayStr();
+  if (!medsLog[today]) medsLog[today] = {};
+  return medsLog[today];
+}
+
+async function toggleMed(key, slot) {
+  const today = todayStr();
+  if (!medsLog[today]) medsLog[today] = {};
+  const mKey = `${key}_${slot}`;
+  if (medsLog[today][mKey]) {
+    delete medsLog[today][mKey];
+  } else {
+    medsLog[today][mKey] = new Date().toISOString();
+  }
+  renderMeds();
+  await supabase.from('daily_meds').upsert({ date: today, data: medsLog[today] });
+}
+
+function renderMeds() {
+  const today = todayStr();
+  const todayMeds = getMedsForToday();
+  const todayFeeds = getTodayFeedings();
+
+  let html = '';
+
+  /* Fixed meds */
+  html += '<div class="med-section"><div class="med-section-title">Daily Medications</div>';
+
+  MED_DEFINITIONS.forEach(med => {
+    med.slots.forEach(slot => {
+      const mKey = `${med.key}_${slot}`;
+      const checked = !!todayMeds[mKey];
+      const slotLabel = med.slots.length > 1 ? ` (${slot})` : '';
+      html += `
+        <div class="med-item" onclick="toggleMed('${med.key}', '${slot}')">
+          <div class="med-checkbox ${checked ? 'checked' : ''}"></div>
+          <div class="med-info">
+            <div class="med-name">${escHtml(med.name)}${slotLabel}</div>
+            <div class="med-desc">${escHtml(med.desc)}</div>
+          </div>
+          ${checked ? `<div class="med-time-stamp">${timeStr(todayMeds[mKey])}</div>` : ''}
+        </div>`;
+    });
+  });
+
+  html += '</div>';
+
+  /* Renalzin — per meal */
+  html += '<div class="med-section"><div class="med-section-title">Renalzin / Lanthanum Carbonate (per meal)</div>';
+  if (todayFeeds.length === 0) {
+    html += '<div style="padding: 8px 16px; color: var(--text-muted); font-size: 13px;">No meals yet today. Add a feeding first.</div>';
+  } else {
+    todayFeeds.forEach((f, i) => {
+      const mKey = `renalzin_meal${i}`;
+      const checked = !!todayMeds[mKey];
+      html += `
+        <div class="med-item" onclick="toggleMed('renalzin', 'meal${i}')">
+          <div class="med-checkbox ${checked ? 'checked' : ''}"></div>
+          <div class="med-info">
+            <div class="med-name">Renalzin</div>
+            <div class="med-desc">with ${timeStr(f.timestamp)} feeding (${escHtml(f.productName || '')})</div>
+          </div>
+          ${checked ? `<div class="med-time-stamp">${timeStr(todayMeds[mKey])}</div>` : ''}
+        </div>`;
+    });
+  }
+  html += '</div>';
+
+  /* SubQ Fluids */
+  html += '<div class="med-section"><div class="med-section-title">SubQ Fluids</div>';
+  const subqDone = !!todayMeds['subq_done'];
+  html += `
+    <div class="subq-input-row">
+      <div class="med-checkbox ${subqDone ? 'checked' : ''}" onclick="toggleSubQ()" style="cursor:pointer;"></div>
+      <div class="med-info">
+        <div class="med-name">SubQ Fluids</div>
+        ${subqDone ? `<div class="med-time-stamp">${timeStr(todayMeds['subq_done'])} - ${todayMeds['subq_ml'] || 200}ml</div>` : ''}
+      </div>
+      <input type="number" id="subq-ml-input" value="${todayMeds['subq_ml'] || 200}" min="0" max="500" placeholder="ml" ${subqDone ? 'disabled' : ''}>
+      <span style="color: var(--text-muted); font-size: 13px;">ml</span>
+    </div>`;
+  html += '</div>';
+
+  document.getElementById('meds-list').innerHTML = html;
+}
+
+async function toggleSubQ() {
+  const today = todayStr();
+  if (!medsLog[today]) medsLog[today] = {};
+  if (medsLog[today]['subq_done']) {
+    delete medsLog[today]['subq_done'];
+    delete medsLog[today]['subq_ml'];
+  } else {
+    const ml = parseInt(document.getElementById('subq-ml-input')?.value) || 200;
+    medsLog[today]['subq_done'] = new Date().toISOString();
+    medsLog[today]['subq_ml'] = ml;
+  }
+  renderMeds();
+  await supabase.from('daily_meds').upsert({ date: today, data: medsLog[today] });
+}
+
+/* ============================================================
+   WEIGHT
+   ============================================================ */
+function renderWeight() {
+  weights.sort((a, b) => a.date.localeCompare(b.date));
+  const latest = weights.length > 0 ? weights[weights.length - 1] : null;
+  document.getElementById('weight-current').textContent = latest ? latest.value.toFixed(2) + ' kg' : '--';
+
+  /* Progress toward 3.7kg target. Base is some lower bound, say 2.5 */
+  if (latest) {
+    const minW = 2.5, targetW = 3.7;
+    const pct = Math.max(0, Math.min(100, ((latest.value - minW) / (targetW - minW)) * 100));
+    document.getElementById('weight-progress-fill').style.width = pct + '%';
+  }
+
+  drawWeightChart();
+
+  /* History list */
+  const hist = document.getElementById('weight-history');
+  hist.innerHTML = '<div class="chart-title" style="margin-bottom: 8px;">Weight Log</div>' +
+    [...weights].reverse().map(w => `
+      <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 600;">${w.value.toFixed(2)} kg</div>
+          <div style="font-size: 12px; color: var(--text-muted);">${dateToLocal(w.date)}</div>
+        </div>
+        <button class="feed-action-btn delete" onclick="deleteWeight('${w.id}')" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>`).join('');
+}
+
+function openWeightForm() {
+  document.getElementById('weight-date').value = todayStr();
+  document.getElementById('weight-value').value = '';
+  openModal('modal-weight');
+}
+
+async function saveWeight(e) {
+  e.preventDefault();
+  const date = document.getElementById('weight-date').value;
+  const value = parseFloat(document.getElementById('weight-value').value);
+  if (!date || isNaN(value)) return;
+
+  /* Replace if same date exists */
+  const existing = weights.findIndex(w => w.date === date);
+  let entry;
+  if (existing >= 0) {
+    weights[existing].value = value;
+    entry = weights[existing];
+  } else {
+    entry = { id: genId(), date, value };
+    weights.push(entry);
+  }
+
+  closeModal('modal-weight');
+  renderWeight();
+  await supabase.from('weights').upsert(entry);
+}
+
+function deleteWeight(id) {
+  showConfirm('Delete this weight entry?', async () => {
+    weights = weights.filter(w => w.id !== id);
+    renderWeight();
+    await supabase.from('weights').delete().eq('id', id);
+  });
+}
+
+/* ============================================================
+   RESPIRATORY RATE
+   ============================================================ */
+function renderBreathing() {
+  rrEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  const latest = rrEntries.length > 0 ? rrEntries[0] : null;
+  document.getElementById('rr-bpm-display').textContent = rrCalculatedBPM != null ? rrCalculatedBPM : (latest ? latest.bpm : '--');
+
+  if (rrCalculatedBPM != null || (latest && latest.bpm > 30)) {
+    const bpm = rrCalculatedBPM != null ? rrCalculatedBPM : latest.bpm;
+    const alert = document.getElementById('rr-alert');
+    if (bpm > 30) {
+      alert.style.display = 'block';
+    } else {
+      alert.style.display = 'none';
+    }
+  } else {
+    document.getElementById('rr-alert').style.display = 'none';
+  }
+
+  document.getElementById('rr-save-btn').style.display = rrCalculatedBPM != null ? 'inline-flex' : 'none';
+
+  drawRRChart();
+
+  /* History */
+  const hist = document.getElementById('rr-history');
+  hist.innerHTML = rrEntries.slice(0, 20).map(r => {
+    const color = r.bpm < 25 ? 'var(--green)' : (r.bpm <= 35 ? 'var(--yellow)' : 'var(--red)');
+    return `
+      <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: ${color};">${r.bpm} BPM</div>
+          <div style="font-size: 12px; color: var(--text-muted);">${dateToLocal(r.timestamp)} ${timeStr(r.timestamp)}</div>
+        </div>
+        <button class="feed-action-btn delete" onclick="deleteRR('${r.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function handleRRTap() {
+  if (rrTapCount === 0) {
+    /* Start timer */
+    rrTimerStart = Date.now();
+    rrTapCount = 1;
+    rrCalculatedBPM = null;
+    rrTimerInterval = setInterval(updateRRTimer, 100);
+    document.getElementById('rr-save-btn').style.display = 'none';
+    document.getElementById('rr-alert').style.display = 'none';
+  } else {
+    rrTapCount++;
+  }
+
+  /* After 30 seconds, auto-calculate */
+  const elapsed = (Date.now() - rrTimerStart) / 1000;
+  if (elapsed >= 30) {
+    finishRRCount();
+  }
+
+  /* Show live count */
+  const elapsedNow = Math.max(1, (Date.now() - rrTimerStart) / 1000);
+  rrCalculatedBPM = Math.round((rrTapCount / elapsedNow) * 60);
+  document.getElementById('rr-bpm-display').textContent = rrCalculatedBPM;
+
+  if (rrCalculatedBPM > 30) {
+    document.getElementById('rr-alert').style.display = 'block';
+  }
+}
+
+function updateRRTimer() {
+  if (!rrTimerStart) return;
+  const elapsed = (Date.now() - rrTimerStart) / 1000;
+  const mins = Math.floor(elapsed / 60);
+  const secs = Math.floor(elapsed % 60);
+  document.getElementById('rr-timer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+  if (elapsed >= 30) {
+    finishRRCount();
+  }
+}
+
+function finishRRCount() {
+  clearInterval(rrTimerInterval);
+  rrTimerInterval = null;
+  const elapsed = (Date.now() - rrTimerStart) / 1000;
+  rrCalculatedBPM = Math.round((rrTapCount / elapsed) * 60);
+  document.getElementById('rr-bpm-display').textContent = rrCalculatedBPM;
+  document.getElementById('rr-save-btn').style.display = 'inline-flex';
+
+  if (rrCalculatedBPM > 30) {
+    document.getElementById('rr-alert').style.display = 'block';
+  }
+}
+
+function resetRR() {
+  clearInterval(rrTimerInterval);
+  rrTimerInterval = null;
+  rrTapCount = 0;
+  rrTimerStart = null;
+  rrCalculatedBPM = null;
+  document.getElementById('rr-timer').textContent = '0:00';
+  document.getElementById('rr-save-btn').style.display = 'none';
+  document.getElementById('rr-alert').style.display = 'none';
+  renderBreathing();
+}
+
+async function saveRR() {
+  if (rrCalculatedBPM == null) return;
+  const entry = { id: genId(), timestamp: new Date().toISOString(), bpm: rrCalculatedBPM };
+  rrEntries.push(entry);
+  resetRR();
+  renderBreathing();
+  await supabase.from('respiratory_rates').insert(entry);
+}
+
+function openManualRR() {
+  document.getElementById('rr-datetime').value = nowLocalISO();
+  document.getElementById('rr-manual-bpm').value = '';
+  openModal('modal-rr');
+}
+
+async function saveManualRR(e) {
+  e.preventDefault();
+  const ts = document.getElementById('rr-datetime').value;
+  const bpm = parseInt(document.getElementById('rr-manual-bpm').value);
+  if (!ts || isNaN(bpm)) return;
+  const entry = { id: genId(), timestamp: ts, bpm };
+  rrEntries.push(entry);
+  closeModal('modal-rr');
+  renderBreathing();
+  await supabase.from('respiratory_rates').insert(entry);
+}
+
+function deleteRR(id) {
+  showConfirm('Delete this entry?', async () => {
+    rrEntries = rrEntries.filter(r => r.id !== id);
+    renderBreathing();
+    await supabase.from('respiratory_rates').delete().eq('id', id);
+  });
+}
+
+/* ============================================================
+   LABS
+   ============================================================ */
+function renderLabs() {
+  labs.sort((a, b) => a.date.localeCompare(b.date));
+  renderLabChart();
+
+  /* History */
+  const hist = document.getElementById('labs-history');
+  const markers = Object.keys(LAB_RANGES);
+  hist.innerHTML = '<div class="chart-title" style="padding: 0 0 8px;">Blood Work History</div>' +
+    [...labs].reverse().map(l => {
+      const chips = markers.filter(m => l[m] != null).map(m => {
+        const range = LAB_RANGES[m];
+        let cls = 'normal';
+        if (l[m] > range.high) cls = 'high';
+        else if (l[m] < range.low) cls = 'low';
+        return `<span class="lab-chip ${cls}">${m}: ${l[m]}</span>`;
+      }).join('');
+      return `
+        <div class="card lab-entry-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div class="lab-date">${dateToLocal(l.date)}</div>
+              <div class="lab-values">${chips || '<span style="color: var(--text-muted); font-size: 12px;">No values</span>'}</div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button class="feed-action-btn" onclick="editLab('${l.id}')" title="Edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="feed-action-btn delete" onclick="deleteLab('${l.id}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function openLabForm(editId) {
+  const markers = Object.keys(LAB_RANGES);
+  document.getElementById('lab-edit-id').value = '';
+  document.getElementById('lab-modal-title').textContent = 'Add Blood Work';
+  document.getElementById('lab-date').value = todayStr();
+  markers.forEach(m => { document.getElementById(`lab-${m}`).value = ''; });
+
+  if (editId) {
+    const l = labs.find(x => x.id === editId);
+    if (l) {
+      document.getElementById('lab-edit-id').value = l.id;
+      document.getElementById('lab-modal-title').textContent = 'Edit Blood Work';
+      document.getElementById('lab-date').value = l.date;
+      markers.forEach(m => { document.getElementById(`lab-${m}`).value = l[m] != null ? l[m] : ''; });
+    }
+  }
+
+  openModal('modal-lab');
+}
+
+function editLab(id) { openLabForm(id); }
+
+async function saveLab(e) {
+  e.preventDefault();
+  const editId = document.getElementById('lab-edit-id').value;
+  const date = document.getElementById('lab-date').value;
+  if (!date) return;
+
+  const markers = Object.keys(LAB_RANGES);
+  const entry = { id: editId || genId(), date };
+  markers.forEach(m => {
+    const val = document.getElementById(`lab-${m}`).value;
+    entry[m] = val !== '' ? parseFloat(val) : null;
+  });
+
+  if (editId) {
+    const idx = labs.findIndex(l => l.id === editId);
+    if (idx >= 0) labs[idx] = entry;
+  } else {
+    labs.push(entry);
+  }
+
+  closeModal('modal-lab');
+  renderLabs();
+  await supabase.from('blood_work').upsert(labToDb(entry));
+}
+
+function deleteLab(id) {
+  showConfirm('Delete this blood work entry?', async () => {
+    labs = labs.filter(l => l.id !== id);
+    renderLabs();
+    await supabase.from('blood_work').delete().eq('id', id);
+  });
+}
+
+/* ============================================================
+   VET APPOINTMENTS
+   ============================================================ */
+function renderVet() {
+  vetAppts.sort((a, b) => a.date.localeCompare(b.date));
+  const list = document.getElementById('vet-list');
+  const now = new Date();
+
+  list.innerHTML = vetAppts.map(v => {
+    const d = daysBetween(now, v.date);
+    let countdown = '';
+    if (d > 0) countdown = `In ${d} day${d > 1 ? 's' : ''}`;
+    else if (d === 0) countdown = 'Today!';
+    else countdown = `${Math.abs(d)} day${Math.abs(d) > 1 ? 's' : ''} ago`;
+
+    return `
+      <div class="card vet-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="vet-date">${dateToLocal(v.date)}</div>
+            <div class="vet-location">${escHtml(v.location)}</div>
+            <div class="vet-tests">${escHtml(v.tests)}</div>
+            <div class="vet-countdown">${countdown}</div>
+          </div>
+          <button class="feed-action-btn delete" onclick="deleteVetAppt('${v.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (vetAppts.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>No upcoming vet appointments.</p></div>';
+  }
+}
+
+function openVetForm() {
+  document.getElementById('vet-edit-id').value = '';
+  document.getElementById('vet-date').value = '';
+  document.getElementById('vet-location').value = '';
+  document.getElementById('vet-tests').value = '';
+  openModal('modal-vet');
+}
+
+async function saveVetAppt(e) {
+  e.preventDefault();
+  const editId = document.getElementById('vet-edit-id').value;
+  const date = document.getElementById('vet-date').value;
+  const location = document.getElementById('vet-location').value.trim();
+  const tests = document.getElementById('vet-tests').value.trim();
+  if (!date || !location) return;
+
+  const entry = { id: editId || genId(), date, location, tests };
+
+  if (editId) {
+    const idx = vetAppts.findIndex(v => v.id === editId);
+    if (idx >= 0) vetAppts[idx] = entry;
+  } else {
+    vetAppts.push(entry);
+  }
+
+  closeModal('modal-vet');
+  renderVet();
+  await supabase.from('vet_appointments').upsert(entry);
+}
+
+function deleteVetAppt(id) {
+  showConfirm('Delete this appointment?', async () => {
+    vetAppts = vetAppts.filter(v => v.id !== id);
+    renderVet();
+    await supabase.from('vet_appointments').delete().eq('id', id);
+  });
+}
+
+/* ============================================================
+   HISTORY TAB
+   ============================================================ */
+function renderHistory() {
+  const ds = historyDate.toISOString().slice(0, 10);
+  const isToday = ds === todayStr();
+
+  document.getElementById('history-date-label').textContent = isToday ? 'Today' : dateToLocal(ds);
+
+  /* Day feedings */
+  const dayFeeds = feedings.filter(f => f.timestamp.slice(0, 10) === ds).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const totalCal = dayFeeds.reduce((s, f) => s + (f.calories || 0), 0);
+  const remaining = Math.max(0, 250 - totalCal);
+  const pct = Math.min(100, Math.round((totalCal / 250) * 100));
+
+  /* Summary */
+  document.getElementById('history-summary').innerHTML = `
+    <div class="history-stat">
+      <div class="stat-value" style="color: ${getCalorieColor(totalCal)};">${Math.round(totalCal)}</div>
+      <div class="stat-label">Calories</div>
+    </div>
+    <div class="history-stat">
+      <div class="stat-value">${dayFeeds.length}</div>
+      <div class="stat-label">Meals</div>
+    </div>
+    <div class="history-stat">
+      <div class="stat-value" style="color: ${pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)'};">${pct}%</div>
+      <div class="stat-label">Target</div>
+    </div>
+    <div class="history-stat">
+      <div class="stat-value">${Math.round(remaining)}</div>
+      <div class="stat-label">Remaining</div>
+    </div>`;
+
+  /* Meals list */
+  const mealsDiv = document.getElementById('history-meals');
+  if (dayFeeds.length === 0) {
+    mealsDiv.innerHTML = '<div class="empty-state"><p>No feedings recorded on this day.</p></div>';
+  } else {
+    mealsDiv.innerHTML = '<div class="chart-title" style="margin-bottom: 8px;">Meals</div>' +
+      dayFeeds.map(f => {
+        const methodClass = f.method ? `method-${f.method}` : '';
+        const methodLabel = f.method ? f.method.charAt(0).toUpperCase() + f.method.slice(1) : '';
+        return `
+          <div class="card">
+            <div class="feed-time">${timeStr(f.timestamp)}</div>
+            <div class="feed-product">${escHtml(f.productName || 'Unknown')}</div>
+            <div class="feed-details">
+              <span>${f.grams ? f.grams + 'g' : ''}</span>
+              <span class="feed-cal">${Math.round(f.calories || 0)} cal</span>
+            </div>
+            ${methodLabel ? `<span class="feed-method ${methodClass}">${methodLabel}</span>` : ''}
+            ${f.notes ? `<div class="feed-notes">${escHtml(f.notes)}</div>` : ''}
+          </div>`;
+      }).join('');
+  }
+
+  /* Weekly summary */
+  renderWeeklySummary(ds);
+}
+
+function renderWeeklySummary(dateStr) {
+  const d = new Date(dateStr);
+  const dayOfWeek = d.getDay(); /* 0 = Sunday */
+  const weekStart = new Date(d);
+  weekStart.setDate(weekStart.getDate() - dayOfWeek);
+
+  let weekCals = [];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  for (let i = 0; i < 7; i++) {
+    const wd = new Date(weekStart);
+    wd.setDate(wd.getDate() + i);
+    const ws = wd.toISOString().slice(0, 10);
+    const dayFeeds = feedings.filter(f => f.timestamp.slice(0, 10) === ws);
+    const cal = dayFeeds.reduce((s, f) => s + (f.calories || 0), 0);
+    weekCals.push({ day: days[i], date: ws, cal });
+  }
+
+  const totalWeek = weekCals.reduce((s, w) => s + w.cal, 0);
+  const daysWithData = weekCals.filter(w => w.cal > 0).length;
+  const avg = daysWithData > 0 ? Math.round(totalWeek / daysWithData) : 0;
+
+  /* Trend: compare to previous week avg */
+  const prevWeekStart = new Date(weekStart);
+  prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  let prevTotal = 0, prevDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const wd = new Date(prevWeekStart);
+    wd.setDate(wd.getDate() + i);
+    const ws = wd.toISOString().slice(0, 10);
+    const cal = feedings.filter(f => f.timestamp.slice(0, 10) === ws).reduce((s, f) => s + (f.calories || 0), 0);
+    if (cal > 0) { prevTotal += cal; prevDays++; }
+  }
+  const prevAvg = prevDays > 0 ? Math.round(prevTotal / prevDays) : 0;
+  let trendText = 'No prior data';
+  if (prevAvg > 0 && avg > 0) {
+    const diff = avg - prevAvg;
+    trendText = diff >= 0 ? `+${diff} cal vs last week` : `${diff} cal vs last week`;
+  }
+
+  document.getElementById('weekly-summary').innerHTML = `
+    <h3>Weekly Summary</h3>
+    ${weekCals.map(w => `
+      <div class="weekly-row">
+        <span>${w.day} ${w.date === todayStr() ? '(today)' : ''}</span>
+        <span style="color: ${w.cal > 0 ? getCalorieColor(w.cal) : 'var(--text-muted)'};">${w.cal > 0 ? Math.round(w.cal) + ' cal' : '--'}</span>
+      </div>`).join('')}
+    <div class="divider"></div>
+    <div class="weekly-row">
+      <span>Daily Average</span>
+      <span>${avg} cal</span>
+    </div>
+    <div class="weekly-row">
+      <span>Trend</span>
+      <span>${trendText}</span>
+    </div>`;
+}
+
+function historyPrev() {
+  historyDate.setDate(historyDate.getDate() - 1);
+  renderHistory();
+}
+
+function historyNext() {
+  historyDate.setDate(historyDate.getDate() + 1);
+  renderHistory();
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+function openCalendar() {
+  calendarViewDate = new Date(historyDate);
+  renderCalendar();
+  document.getElementById('calendar-overlay').classList.add('show');
+}
+
+function closeCalendar() {
+  document.getElementById('calendar-overlay').classList.remove('show');
+}
+
+function calendarPrevMonth() {
+  calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+  renderCalendar();
+}
+
+function calendarNextMonth() {
+  calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth();
+  document.getElementById('calendar-month-label').textContent =
+    new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const grid = document.getElementById('calendar-grid');
+  const dayHeaders = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  let html = dayHeaders.map(d => `<div class="day-header">${d}</div>`).join('');
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayS = todayStr();
+  const selS = historyDate.toISOString().slice(0, 10);
+
+  /* Days from previous month */
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d = prevMonthDays - i;
+    html += `<button class="day-cell other-month" disabled>${d}</button>`;
+  }
+
+  /* Current month days */
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateS = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = dateS === todayS;
+    const isSel = dateS === selS;
+    const hasData = feedings.some(f => f.timestamp.slice(0, 10) === dateS);
+    const classes = ['day-cell'];
+    if (isToday) classes.push('today');
+    if (isSel) classes.push('selected');
+    if (hasData) classes.push('has-data');
+    html += `<button class="${classes.join(' ')}" onclick="selectCalendarDate('${dateS}')">${d}</button>`;
+  }
+
+  /* Remaining cells */
+  const totalCells = firstDay + daysInMonth;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<button class="day-cell other-month" disabled>${i}</button>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function selectCalendarDate(dateStr) {
+  historyDate = new Date(dateStr + 'T12:00:00');
+  closeCalendar();
+  renderHistory();
+}
+
+/* ============================================================
+   CANVAS CHARTS
+   ============================================================ */
+function drawLineChart(canvasId, dataPoints, opts = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = opts.width || rect.width - 24;
+  const h = opts.height || parseInt(canvas.getAttribute('height')) || 180;
+
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  /* Clear */
+  ctx.clearRect(0, 0, w, h);
+
+  if (dataPoints.length === 0) {
+    ctx.fillStyle = '#5a6a7a';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', w / 2, h / 2);
+    return;
+  }
+
+  const pad = { top: 20, right: 16, bottom: 36, left: 44 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+
+  const vals = dataPoints.map(d => d.value);
+  let minV = opts.minVal != null ? opts.minVal : Math.min(...vals);
+  let maxV = opts.maxVal != null ? opts.maxVal : Math.max(...vals);
+
+  /* Include reference range in scale */
+  if (opts.refLow != null) minV = Math.min(minV, opts.refLow);
+  if (opts.refHigh != null) maxV = Math.max(maxV, opts.refHigh);
+
+  const rangeV = maxV - minV || 1;
+  minV -= rangeV * 0.1;
+  maxV += rangeV * 0.1;
+  const totalRange = maxV - minV;
+
+  function xPos(i) { return pad.left + (dataPoints.length === 1 ? cw / 2 : (i / (dataPoints.length - 1)) * cw); }
+  function yPos(v) { return pad.top + ch - ((v - minV) / totalRange) * ch; }
+
+  /* Grid lines */
+  ctx.strokeStyle = '#2a3a4e';
+  ctx.lineWidth = 0.5;
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.top + (i / gridLines) * ch;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+
+    const val = maxV - (i / gridLines) * totalRange;
+    ctx.fillStyle = '#5a6a7a';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(opts.decimals != null ? opts.decimals : 1), pad.left - 6, y + 3);
+  }
+
+  /* Reference range band */
+  if (opts.refLow != null && opts.refHigh != null) {
+    const y1 = yPos(opts.refHigh);
+    const y2 = yPos(opts.refLow);
+    ctx.fillStyle = 'rgba(34, 197, 94, 0.08)';
+    ctx.fillRect(pad.left, y1, cw, y2 - y1);
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y1);
+    ctx.lineTo(w - pad.right, y1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y2);
+    ctx.lineTo(w - pad.right, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* Line */
+  ctx.strokeStyle = opts.lineColor || '#f59e0b';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  dataPoints.forEach((d, i) => {
+    const x = xPos(i);
+    const y = yPos(d.value);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  /* Dots */
+  dataPoints.forEach((d, i) => {
+    const x = xPos(i);
+    const y = yPos(d.value);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = opts.lineColor || '#f59e0b';
+    ctx.fill();
+    ctx.strokeStyle = '#0f1724';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  /* X-axis labels */
+  ctx.fillStyle = '#5a6a7a';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+
+  /* Show labels for first, last, and spaced intermediate points */
+  const maxLabels = Math.min(dataPoints.length, Math.floor(cw / 50));
+  const step = Math.max(1, Math.floor(dataPoints.length / maxLabels));
+  dataPoints.forEach((d, i) => {
+    if (i % step === 0 || i === dataPoints.length - 1) {
+      const x = xPos(i);
+      ctx.save();
+      ctx.translate(x, h - pad.bottom + 14);
+      ctx.rotate(-0.4);
+      ctx.fillText(d.label, 0, 0);
+      ctx.restore();
+    }
+  });
+}
+
+function drawWeightChart() {
+  const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
+  const data = sorted.map(w => ({
+    value: w.value,
+    label: new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  }));
+  drawLineChart('chart-weight', data, {
+    lineColor: '#f59e0b',
+    refLow: 3.5,
+    refHigh: 3.9,
+    decimals: 2,
+    minVal: 2.5,
+    maxVal: 4.5,
+  });
+}
+
+function drawRRChart() {
+  const sorted = [...rrEntries].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const data = sorted.map(r => ({
+    value: r.bpm,
+    label: new Date(r.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  }));
+  drawLineChart('chart-rr', data, {
+    lineColor: '#3b82f6',
+    refLow: 0,
+    refHigh: 25,
+    decimals: 0,
+    minVal: 0,
+  });
+}
+
+function renderLabChart() {
+  const marker = document.getElementById('lab-chart-marker').value;
+  const range = LAB_RANGES[marker];
+  document.getElementById('lab-chart-title').textContent = `${range.name} (${marker}) Trend`;
+
+  const sorted = [...labs].sort((a, b) => a.date.localeCompare(b.date));
+  const data = sorted.filter(l => l[marker] != null).map(l => ({
+    value: l[marker],
+    label: new Date(l.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  }));
+
+  drawLineChart('chart-labs', data, {
+    lineColor: '#ec4899',
+    refLow: range.low,
+    refHigh: range.high,
+    decimals: marker === 'CRE' || marker === 'CA' || marker === 'K' || marker === 'fSAA' || marker === 'PHOS' ? 1 : 0,
+  });
+}
+
+/* ============================================================
+   DATA IMPORT / EXPORT
+   ============================================================ */
+function openDataModal() { openModal('modal-data'); }
+function closeDataModal() { closeModal('modal-data'); }
+
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products,
+    feedings,
+    meds: medsLog,
+    weights,
+    respiratory: rrEntries,
+    labs,
+    vetAppts,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sabay-tracker-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function triggerImport() {
+  document.getElementById('import-file').click();
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+
+      if (data.products) {
+        products = data.products;
+        await supabase.from('products').delete().neq('id', '');
+        if (products.length > 0) await supabase.from('products').insert(products);
+      }
+      if (data.feedings) {
+        feedings = data.feedings;
+        await supabase.from('feedings').delete().neq('id', '');
+        if (feedings.length > 0) await supabase.from('feedings').insert(feedings.map(feedingToDb));
+      }
+      if (data.meds) {
+        medsLog = data.meds;
+        await supabase.from('daily_meds').delete().neq('date', '1900-01-01');
+        const medsRows = Object.entries(medsLog).map(([date, d]) => ({ date, data: d }));
+        if (medsRows.length > 0) await supabase.from('daily_meds').insert(medsRows);
+      }
+      if (data.weights) {
+        weights = data.weights;
+        await supabase.from('weights').delete().neq('id', '');
+        if (weights.length > 0) await supabase.from('weights').insert(weights);
+      }
+      if (data.respiratory) {
+        rrEntries = data.respiratory;
+        await supabase.from('respiratory_rates').delete().neq('id', '');
+        if (rrEntries.length > 0) await supabase.from('respiratory_rates').insert(rrEntries);
+      }
+      if (data.labs) {
+        labs = data.labs;
+        await supabase.from('blood_work').delete().neq('id', '');
+        if (labs.length > 0) await supabase.from('blood_work').insert(labs.map(labToDb));
+      }
+      if (data.vetAppts) {
+        vetAppts = data.vetAppts;
+        await supabase.from('vet_appointments').delete().neq('id', '');
+        if (vetAppts.length > 0) await supabase.from('vet_appointments').insert(vetAppts);
+      }
+
+      alert('Data imported successfully!');
+      closeDataModal();
+      switchTab(currentTab);
+    } catch (err) {
+      alert('Invalid data file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ============================================================
+   MIDNIGHT RESET CHECK
+   ============================================================ */
+let lastCheckedDate = todayStr();
+
+function checkMidnight() {
+  const now = todayStr();
+  if (now !== lastCheckedDate) {
+    lastCheckedDate = now;
+    if (currentTab === 'feed') renderFeed();
+    if (currentTab === 'meds') renderMeds();
+  }
+}
+
+setInterval(checkMidnight, 30000);
+
+/* ============================================================
+   WINDOW RESIZE — redraw charts
+   ============================================================ */
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (currentTab === 'health') renderHealthTab();
+  }, 200);
+});
+
+/* ============================================================
+   EXPOSE TO GLOBAL SCOPE (module scripts are not global)
+   ============================================================ */
+window.switchTab = switchTab;
+window.switchHealthTab = switchHealthTab;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showConfirm = showConfirm;
+window.confirmOk = confirmOk;
+window.confirmCancel = confirmCancel;
+window.openFeedingForm = openFeedingForm;
+window.closeFeedingForm = closeFeedingForm;
+window.saveFeedingForm = saveFeedingForm;
+window.editFeeding = editFeeding;
+window.deleteFeeding = deleteFeeding;
+window.onProductSelect = onProductSelect;
+window.setGrams = setGrams;
+window.selectMethod = selectMethod;
+window.updateCalPreview = updateCalPreview;
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.editProduct = editProduct;
+window.deleteProduct = deleteProduct;
+window.saveProduct = saveProduct;
+window.selectUnit = selectUnit;
+window.resetProductForm = resetProductForm;
+window.toggleMed = toggleMed;
+window.toggleSubQ = toggleSubQ;
+window.openWeightForm = openWeightForm;
+window.saveWeight = saveWeight;
+window.deleteWeight = deleteWeight;
+window.handleRRTap = handleRRTap;
+window.resetRR = resetRR;
+window.saveRR = saveRR;
+window.openManualRR = openManualRR;
+window.saveManualRR = saveManualRR;
+window.deleteRR = deleteRR;
+window.openLabForm = openLabForm;
+window.editLab = editLab;
+window.saveLab = saveLab;
+window.deleteLab = deleteLab;
+window.renderLabChart = renderLabChart;
+window.renderVet = renderVet;
+window.openVetForm = openVetForm;
+window.saveVetAppt = saveVetAppt;
+window.deleteVetAppt = deleteVetAppt;
+window.historyPrev = historyPrev;
+window.historyNext = historyNext;
+window.openCalendar = openCalendar;
+window.closeCalendar = closeCalendar;
+window.calendarPrevMonth = calendarPrevMonth;
+window.calendarNextMonth = calendarNextMonth;
+window.selectCalendarDate = selectCalendarDate;
+window.openDataModal = openDataModal;
+window.closeDataModal = closeDataModal;
+window.exportData = exportData;
+window.triggerImport = triggerImport;
+window.importData = importData;
+
+/* ============================================================
+   INIT
+   ============================================================ */
+initApp();
+</script>
+</body>
+</html>
