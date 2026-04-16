@@ -1490,9 +1490,26 @@ textarea.form-input {
 <div class="modal-overlay" id="modal-settings">
   <div class="modal">
     <div class="modal-header">
-      <h2>Products</h2>
+      <h2>Settings</h2>
       <button class="modal-close" onclick="closeSettings()">&times;</button>
     </div>
+    <div class="form-group">
+      <label class="form-label">Day starts at</label>
+      <select class="form-input" id="setting-day-start" onchange="saveDayStartHour(this.value)">
+        <option value="0">12 AM (midnight)</option>
+        <option value="1">1 AM</option>
+        <option value="2">2 AM</option>
+        <option value="3">3 AM</option>
+        <option value="4">4 AM</option>
+        <option value="5">5 AM</option>
+        <option value="6">6 AM</option>
+      </select>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+        Feedings before this hour count toward the previous day.
+      </p>
+    </div>
+    <div class="divider"></div>
+    <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Products</h3>
     <div id="product-list"></div>
     <div class="divider"></div>
     <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;" id="product-form-title">Add Product</h3>
@@ -1736,13 +1753,34 @@ function genId() {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
 }
 
 function nowLocalISO() {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
+}
+
+/* Returns the "effective" date a timestamp belongs to, considering the
+   configured day start hour. E.g. if dayStartHour=4, a feeding at 2am April 10
+   counts as April 9. */
+function getEffectiveDate(timestamp) {
+  if (!timestamp) return '';
+  const [datePart, timePart] = timestamp.split('T');
+  const hour = parseInt((timePart || '00').slice(0, 2)) || 0;
+  if (hour < dayStartHour) {
+    const d = new Date(datePart + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+  return datePart;
+}
+
+function getEffectiveToday() {
+  return getEffectiveDate(nowLocalISO());
 }
 
 function dateToLocal(dateStr) {
@@ -1859,6 +1897,9 @@ let rrEntries = [];
 let labs = [];
 let vetAppts = [];
 
+/* App settings */
+let dayStartHour = 0;
+
 /* Current view state */
 let currentTab = 'feed';
 let currentHealthTab = 'weight';
@@ -1876,7 +1917,7 @@ let rrCalculatedBPM = null;
    SUPABASE DATA LOADING
    ============================================================ */
 async function initApp() {
-  const [prodRes, feedRes, medsRes, weightRes, rrRes, labRes, vetRes] = await Promise.all([
+  const [prodRes, feedRes, medsRes, weightRes, rrRes, labRes, vetRes, settingsRes] = await Promise.all([
     supabase.from('products').select('*'),
     supabase.from('feedings').select('*'),
     supabase.from('daily_meds').select('*'),
@@ -1884,7 +1925,12 @@ async function initApp() {
     supabase.from('respiratory_rates').select('*'),
     supabase.from('blood_work').select('*'),
     supabase.from('vet_appointments').select('*'),
+    supabase.from('app_settings').select('*'),
   ]);
+
+  (settingsRes.data || []).forEach(s => {
+    if (s.key === 'day_start_hour') dayStartHour = Number(s.value) || 0;
+  });
 
   products = prodRes.data || [];
   feedings = (feedRes.data || []).map(feedingFromDb);
@@ -1970,8 +2016,8 @@ function confirmCancel() {
    FEED TAB — RENDERING
    ============================================================ */
 function getTodayFeedings() {
-  const today = todayStr();
-  return feedings.filter(f => f.timestamp.slice(0, 10) === today).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const today = getEffectiveToday();
+  return feedings.filter(f => getEffectiveDate(f.timestamp) === today).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
 
 function getTodayCalories() {
@@ -2191,10 +2237,20 @@ function deleteFeeding(id) {
 function openSettings() {
   renderProductList();
   resetProductForm();
+  document.getElementById('setting-day-start').value = String(dayStartHour);
   openModal('modal-settings');
 }
 
 function closeSettings() { closeModal('modal-settings'); }
+
+async function saveDayStartHour(value) {
+  dayStartHour = Number(value) || 0;
+  lastCheckedDate = getEffectiveToday();
+  if (currentTab === 'feed') renderFeed();
+  if (currentTab === 'meds') renderMeds();
+  if (currentTab === 'history') renderHistory();
+  await supabase.from('app_settings').upsert({ key: 'day_start_hour', value: dayStartHour });
+}
 
 function renderProductList() {
   const list = document.getElementById('product-list');
@@ -2282,13 +2338,13 @@ const MED_DEFINITIONS = [
 /* Renalzin is per-meal, SubQ is special — rendered separately */
 
 function getMedsForToday() {
-  const today = todayStr();
+  const today = getEffectiveToday();
   if (!medsLog[today]) medsLog[today] = {};
   return medsLog[today];
 }
 
 async function toggleMed(key, slot) {
-  const today = todayStr();
+  const today = getEffectiveToday();
   if (!medsLog[today]) medsLog[today] = {};
   const mKey = `${key}_${slot}`;
   if (medsLog[today][mKey]) {
@@ -2301,7 +2357,7 @@ async function toggleMed(key, slot) {
 }
 
 function renderMeds() {
-  const today = todayStr();
+  const today = getEffectiveToday();
   const todayMeds = getMedsForToday();
   const todayFeeds = getTodayFeedings();
 
@@ -2369,7 +2425,7 @@ function renderMeds() {
 }
 
 async function toggleSubQ() {
-  const today = todayStr();
+  const today = getEffectiveToday();
   if (!medsLog[today]) medsLog[today] = {};
   if (medsLog[today]['subq_done']) {
     delete medsLog[today]['subq_done'];
@@ -2767,12 +2823,12 @@ function deleteVetAppt(id) {
    ============================================================ */
 function renderHistory() {
   const ds = historyDate.toISOString().slice(0, 10);
-  const isToday = ds === todayStr();
+  const isToday = ds === getEffectiveToday();
 
   document.getElementById('history-date-label').textContent = isToday ? 'Today' : dateToLocal(ds);
 
   /* Day feedings */
-  const dayFeeds = feedings.filter(f => f.timestamp.slice(0, 10) === ds).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const dayFeeds = feedings.filter(f => getEffectiveDate(f.timestamp) === ds).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   const totalCal = dayFeeds.reduce((s, f) => s + (f.calories || 0), 0);
   const remaining = Math.max(0, 250 - totalCal);
   const pct = Math.min(100, Math.round((totalCal / 250) * 100));
@@ -2836,7 +2892,7 @@ function renderWeeklySummary(dateStr) {
     const wd = new Date(weekStart);
     wd.setDate(wd.getDate() + i);
     const ws = wd.toISOString().slice(0, 10);
-    const dayFeeds = feedings.filter(f => f.timestamp.slice(0, 10) === ws);
+    const dayFeeds = feedings.filter(f => getEffectiveDate(f.timestamp) === ws);
     const cal = dayFeeds.reduce((s, f) => s + (f.calories || 0), 0);
     weekCals.push({ day: days[i], date: ws, cal });
   }
@@ -2853,7 +2909,7 @@ function renderWeeklySummary(dateStr) {
     const wd = new Date(prevWeekStart);
     wd.setDate(wd.getDate() + i);
     const ws = wd.toISOString().slice(0, 10);
-    const cal = feedings.filter(f => f.timestamp.slice(0, 10) === ws).reduce((s, f) => s + (f.calories || 0), 0);
+    const cal = feedings.filter(f => getEffectiveDate(f.timestamp) === ws).reduce((s, f) => s + (f.calories || 0), 0);
     if (cal > 0) { prevTotal += cal; prevDays++; }
   }
   const prevAvg = prevDays > 0 ? Math.round(prevTotal / prevDays) : 0;
@@ -2867,7 +2923,7 @@ function renderWeeklySummary(dateStr) {
     <h3>Weekly Summary</h3>
     ${weekCals.map(w => `
       <div class="weekly-row">
-        <span>${w.day} ${w.date === todayStr() ? '(today)' : ''}</span>
+        <span>${w.day} ${w.date === getEffectiveToday() ? '(today)' : ''}</span>
         <span style="color: ${w.cal > 0 ? getCalorieColor(w.cal) : 'var(--text-muted)'};">${w.cal > 0 ? Math.round(w.cal) + ' cal' : '--'}</span>
       </div>`).join('')}
     <div class="divider"></div>
@@ -2926,7 +2982,7 @@ function renderCalendar() {
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayS = todayStr();
+  const todayS = getEffectiveToday();
   const selS = historyDate.toISOString().slice(0, 10);
 
   /* Days from previous month */
@@ -2941,7 +2997,7 @@ function renderCalendar() {
     const dateS = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isToday = dateS === todayS;
     const isSel = dateS === selS;
-    const hasData = feedings.some(f => f.timestamp.slice(0, 10) === dateS);
+    const hasData = feedings.some(f => getEffectiveDate(f.timestamp) === dateS);
     const classes = ['day-cell'];
     if (isToday) classes.push('today');
     if (isSel) classes.push('selected');
@@ -3239,10 +3295,10 @@ function importData(e) {
 /* ============================================================
    MIDNIGHT RESET CHECK
    ============================================================ */
-let lastCheckedDate = todayStr();
+let lastCheckedDate = getEffectiveToday();
 
 function checkMidnight() {
-  const now = todayStr();
+  const now = getEffectiveToday();
   if (now !== lastCheckedDate) {
     lastCheckedDate = now;
     if (currentTab === 'feed') renderFeed();
@@ -3284,6 +3340,7 @@ window.selectMethod = selectMethod;
 window.updateCalPreview = updateCalPreview;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
+window.saveDayStartHour = saveDayStartHour;
 window.editProduct = editProduct;
 window.deleteProduct = deleteProduct;
 window.saveProduct = saveProduct;
