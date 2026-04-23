@@ -1431,6 +1431,7 @@ textarea.form-input {
       </div>
       <div class="history-summary" id="history-summary"></div>
       <div id="history-meals" style="padding: 0 16px;"></div>
+      <div id="history-meds" style="padding: 0 16px;"></div>
       <div class="weekly-summary" id="weekly-summary"></div>
     </div>
   </div>
@@ -2891,8 +2892,55 @@ function renderHistory() {
       }).join('');
   }
 
+  /* Meds list */
+  renderHistoryMeds(ds);
+
   /* Weekly summary */
   renderWeeklySummary(ds);
+}
+
+function renderHistoryMeds(ds) {
+  const medsDiv = document.getElementById('history-meds');
+  const dayMeds = medsLog[ds] || {};
+
+  /* Build list of entries: { name, slot, timestamp } */
+  const entries = [];
+  Object.keys(dayMeds).forEach(mKey => {
+    const ts = dayMeds[mKey];
+    /* SubQ fluids special keys */
+    if (mKey === 'subq_done') {
+      const ml = dayMeds['subq_ml'] || 200;
+      entries.push({ name: 'SubQ Fluids', slot: `${ml} ml`, timestamp: ts });
+      return;
+    }
+    if (mKey === 'subq_ml') return; /* handled above */
+    /* Regular meds: split "key_slot" */
+    const lastUnderscore = mKey.lastIndexOf('_');
+    const medKey = mKey.slice(0, lastUnderscore);
+    const slot = mKey.slice(lastUnderscore + 1);
+    const def = MED_DEFINITIONS.find(m => m.key === medKey);
+    const name = def ? def.name : medKey;
+    const slotLabel = def && def.slots.length > 1 ? slot : '';
+    entries.push({ name, slot: slotLabel, timestamp: ts });
+  });
+
+  /* Sort by time */
+  entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (entries.length === 0) {
+    medsDiv.innerHTML = '<div class="chart-title" style="margin: 16px 0 8px;">Medications</div>' +
+      '<div class="empty-state" style="padding: 16px 0;"><p style="font-size: 13px;">No medications recorded on this day.</p></div>';
+    return;
+  }
+
+  medsDiv.innerHTML = '<div class="chart-title" style="margin: 16px 0 8px;">Medications</div>' +
+    entries.map(e => `
+      <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;">
+        <div>
+          <div style="font-weight: 600; font-size: 14px;">${escHtml(e.name)}${e.slot ? ` <span style="color: var(--text-muted); font-weight: 400; font-size: 12px;">(${escHtml(e.slot)})</span>` : ''}</div>
+        </div>
+        <div style="color: var(--green); font-size: 13px; font-weight: 500;">${timeStr(e.timestamp)}</div>
+      </div>`).join('');
 }
 
 function renderWeeklySummary(dateStr) {
