@@ -686,6 +686,24 @@ textarea.form-input {
   font-weight: 500;
 }
 
+.med-time-input {
+  background: var(--bg-input);
+  color: var(--green);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 90px;
+}
+
+.med-time-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .subq-input-row {
   display: flex;
   align-items: center;
@@ -2330,17 +2348,28 @@ async function saveProduct(e) {
    MEDS TAB
    ============================================================ */
 const MED_DEFINITIONS = [
-  { key: 'vetmedin', name: 'Vetmedin', desc: 'Morning', slots: ['morning'] },
-  { key: 'omega3', name: 'Omega-3 Fish Oil', desc: 'Morning + Evening', slots: ['morning', 'evening'] },
-  { key: 'azodyl', name: 'Azodyl', desc: 'Daily', slots: ['daily'] },
+  { key: 'vetmedin',    name: 'Vetmedin',    desc: 'Every 12 hours',             slots: ['morning', 'evening'] },
+  { key: 'ondansetron', name: 'Ondansetron', desc: 'Every 12 hours',             slots: ['morning', 'evening'] },
+  { key: 'omeprazole',  name: 'Omeprazole',  desc: 'Every 12 hours',             slots: ['morning', 'evening'] },
+  { key: 'ferro_b',     name: 'Ferro-B',     desc: 'After dinner',               slots: ['evening'] },
+  { key: 'mirtazapine', name: 'Mirtazapine', desc: 'Every 48 hours (every other day)', slots: ['daily'] },
+  { key: 'azodyl',      name: 'Azodyl',      desc: 'Daily',                      slots: ['daily'] },
+  { key: 'nutraren',    name: 'Nutraren',    desc: 'Daily',                      slots: ['daily'] },
+  { key: 'fortiflora',  name: 'FortiFlora',  desc: 'Daily',                      slots: ['daily'] },
+  { key: 'porus_one',   name: 'Porus One',   desc: 'Daily',                      slots: ['daily'] },
 ];
 
-/* Renalzin is per-meal, SubQ is special — rendered separately */
+/* SubQ Fluids is special — rendered separately */
 
 function getMedsForToday() {
   const today = getEffectiveToday();
   if (!medsLog[today]) medsLog[today] = {};
   return medsLog[today];
+}
+
+function tsToHHMM(ts) {
+  const d = new Date(ts);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
 async function toggleMed(key, slot) {
@@ -2356,14 +2385,22 @@ async function toggleMed(key, slot) {
   await supabase.from('daily_meds').upsert({ date: today, data: medsLog[today] });
 }
 
-function renderMeds() {
+async function editMedTime(mKey, hhmm) {
+  if (!hhmm) return;
   const today = getEffectiveToday();
+  if (!medsLog[today] || !medsLog[today][mKey]) return;
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = new Date(medsLog[today][mKey]);
+  d.setHours(h, m, 0, 0);
+  medsLog[today][mKey] = d.toISOString();
+  await supabase.from('daily_meds').upsert({ date: today, data: medsLog[today] });
+}
+
+function renderMeds() {
   const todayMeds = getMedsForToday();
-  const todayFeeds = getTodayFeedings();
 
   let html = '';
 
-  /* Fixed meds */
   html += '<div class="med-section"><div class="med-section-title">Daily Medications</div>';
 
   MED_DEFINITIONS.forEach(med => {
@@ -2378,32 +2415,11 @@ function renderMeds() {
             <div class="med-name">${escHtml(med.name)}${slotLabel}</div>
             <div class="med-desc">${escHtml(med.desc)}</div>
           </div>
-          ${checked ? `<div class="med-time-stamp">${timeStr(todayMeds[mKey])}</div>` : ''}
+          ${checked ? `<input type="time" class="med-time-input" value="${tsToHHMM(todayMeds[mKey])}" onclick="event.stopPropagation()" onchange="editMedTime('${mKey}', this.value)">` : ''}
         </div>`;
     });
   });
 
-  html += '</div>';
-
-  /* Renalzin — per meal */
-  html += '<div class="med-section"><div class="med-section-title">Renalzin / Lanthanum Carbonate (per meal)</div>';
-  if (todayFeeds.length === 0) {
-    html += '<div style="padding: 8px 16px; color: var(--text-muted); font-size: 13px;">No meals yet today. Add a feeding first.</div>';
-  } else {
-    todayFeeds.forEach((f, i) => {
-      const mKey = `renalzin_meal${i}`;
-      const checked = !!todayMeds[mKey];
-      html += `
-        <div class="med-item" onclick="toggleMed('renalzin', 'meal${i}')">
-          <div class="med-checkbox ${checked ? 'checked' : ''}"></div>
-          <div class="med-info">
-            <div class="med-name">Renalzin</div>
-            <div class="med-desc">with ${timeStr(f.timestamp)} feeding (${escHtml(f.productName || '')})</div>
-          </div>
-          ${checked ? `<div class="med-time-stamp">${timeStr(todayMeds[mKey])}</div>` : ''}
-        </div>`;
-    });
-  }
   html += '</div>';
 
   /* SubQ Fluids */
@@ -3348,6 +3364,7 @@ window.selectUnit = selectUnit;
 window.resetProductForm = resetProductForm;
 window.toggleMed = toggleMed;
 window.toggleSubQ = toggleSubQ;
+window.editMedTime = editMedTime;
 window.openWeightForm = openWeightForm;
 window.saveWeight = saveWeight;
 window.deleteWeight = deleteWeight;
